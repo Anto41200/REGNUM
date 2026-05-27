@@ -770,6 +770,7 @@ body {
 
 </div>
 
+<script src="map.js"></script>
 <script>
 // ===================== GAME STATE =====================
 const G = {
@@ -896,180 +897,10 @@ function getTileColor(tile, x, y) {
   return `rgb(${Math.floor(c[0]*v)},${Math.floor(c[1]*v)},${Math.floor(c[2]*v)})`;
 }
 
-function drawMap() {
-  const canvas = document.getElementById('map-canvas');
-  const container = document.getElementById('map-container');
-  canvas.width = container.clientWidth;
-  canvas.height = container.clientHeight;
-  const ctx = canvas.getContext('2d');
 
-  // Sky/ground bg
-  const bg = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)*0.7);
-  bg.addColorStop(0, SEASON_BG[G.season]);
-  bg.addColorStop(1, '#040804');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+// ─── Map rendering delegated to map.js ───────────────────────────────────
+// drawMap() and animateMap() are defined in map.js, loaded before this script.
 
-  const ox=G.map.offsetX, oy=G.map.offsetY, sc=G.map.scale;
-
-  G.tiles.forEach(tile => {
-    const px = tile.x*TW*sc+ox;
-    const py = tile.y*TH*sc+oy;
-    const tw = TW*sc, th = TH*sc;
-    if(px>canvas.width||py>canvas.height||px+tw<0||py+th<0) return;
-
-    // Draw terrain with color variation
-    let baseColor = getTileColor(tile, tile.x, tile.y);
-    ctx.globalAlpha = tile.owner==='player'?1 : tile.owner?0.78 : 0.52;
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(px+0.5, py+0.5, tw-1, th-1);
-    ctx.globalAlpha=1;
-
-    // Territory overlay
-    const ownerColors = { player:'rgba(184,146,30,0.12)', enemy1:'rgba(139,26,26,0.12)', enemy2:'rgba(26,74,110,0.12)', ally1:'rgba(45,80,22,0.12)' };
-    if(tile.owner && ownerColors[tile.owner]) {
-      ctx.fillStyle=ownerColors[tile.owner];
-      ctx.fillRect(px+0.5, py+0.5, tw-1, th-1);
-    }
-
-    // Texture dots for forest/mountain
-    if(sc>0.6) {
-      const noise = Math.abs(Math.sin(tile.x*53.1+tile.y*97.3)*1000)%1;
-      if(tile.type==='forest') {
-        for(let i=0;i<3;i++) {
-          const nx = noise*tw*0.6+i*tw*0.2;
-          const ny = (Math.abs(Math.sin(tile.x+i)*1000)%1)*th*0.5+th*0.15;
-          ctx.fillStyle='rgba(0,40,0,0.35)';
-          ctx.beginPath();
-          ctx.arc(px+nx, py+ny, 3*sc, 0, Math.PI*2);
-          ctx.fill();
-        }
-      }
-      if(tile.type==='mountain') {
-        ctx.fillStyle='rgba(255,255,255,0.12)';
-        ctx.beginPath();
-        ctx.moveTo(px+tw*0.3, py+th*0.7);
-        ctx.lineTo(px+tw*0.5, py+th*0.15);
-        ctx.lineTo(px+tw*0.7, py+th*0.7);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-
-    // Border lines
-    ctx.strokeStyle = tile.owner==='player'
-      ? 'rgba(184,146,30,0.55)' : tile.owner==='enemy1'
-      ? 'rgba(139,26,26,0.4)' : tile.owner==='enemy2'
-      ? 'rgba(26,74,110,0.4)' : tile.owner==='ally1'
-      ? 'rgba(45,80,22,0.4)' : 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = tile.owner==='player' ? 1.5*sc : 0.8*sc;
-    ctx.strokeRect(px+0.5, py+0.5, tw-1, th-1);
-
-    // Selected highlight
-    if(G.selectedTile&&G.selectedTile.x===tile.x&&G.selectedTile.y===tile.y) {
-      ctx.strokeStyle='rgba(240,192,64,0.9)';
-      ctx.lineWidth=2.5*sc;
-      ctx.strokeRect(px+1.5,py+1.5,tw-3,th-3);
-      ctx.fillStyle='rgba(240,192,64,0.08)';
-      ctx.fillRect(px+0.5,py+0.5,tw-1,th-1);
-    }
-
-    // Special icons
-    if(tile.special && sc>0.45) {
-      const icons = { capital:'🏰', village:'🏠', ruin:'🗿', monastery:'⛪' };
-      ctx.font=`${Math.floor(16*sc)}px serif`;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.globalAlpha=0.95;
-      ctx.fillText(icons[tile.special]||'', px+tw/2, py+th/2);
-      ctx.globalAlpha=1;
-    }
-
-    // Water shimmer
-    if(tile.type==='water' && sc>0.7) {
-      const t = Date.now()*0.001;
-      ctx.strokeStyle=`rgba(80,160,220,${0.1+Math.sin(tile.x+tile.y+t)*0.05})`;
-      ctx.lineWidth=0.5;
-      for(let i=0;i<3;i++) {
-        ctx.beginPath();
-        ctx.moveTo(px+tw*0.1, py+th*(0.3+i*0.2));
-        ctx.lineTo(px+tw*0.9, py+th*(0.3+i*0.2));
-        ctx.stroke();
-      }
-    }
-  });
-
-  // Roads
-  ctx.strokeStyle='rgba(160,130,60,0.35)';
-  ctx.lineWidth=2*sc;
-  ctx.setLineDash([4*sc,3*sc]);
-  [[7,10],[9,5],[16,6],[14,13],[18,11]].forEach(([tx,ty]) => {
-    ctx.beginPath();
-    ctx.moveTo(12*TW*sc+ox+TW*sc/2, 8*TH*sc+oy+TH*sc/2);
-    ctx.lineTo(tx*TW*sc+ox+TW*sc/2, ty*TH*sc+oy+TH*sc/2);
-    ctx.stroke();
-  });
-  ctx.setLineDash([]);
-
-  // Territory name labels (at scale)
-  if(sc>0.6) {
-    ctx.font=`bold ${Math.floor(11*sc)}px Cinzel, serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    const labels = [
-      [12, 8, 'Auvray', 'rgba(240,192,64,0.9)'],
-      [4, 6, 'Blois', 'rgba(200,80,80,0.7)'],
-      [21, 5, 'Bretagne', 'rgba(80,140,200,0.7)'],
-      [13, 16, 'Clairvaux', 'rgba(100,180,60,0.7)'],
-    ];
-    labels.forEach(([lx,ly,name,col]) => {
-      ctx.fillStyle='rgba(0,0,0,0.5)';
-      ctx.fillText(name, lx*TW*sc+ox+TW*sc/2+1, ly*TH*sc+oy+TH*sc/2+1);
-      ctx.fillStyle=col;
-      ctx.fillText(name, lx*TW*sc+ox+TW*sc/2, ly*TH*sc+oy+TH*sc/2);
-    });
-  }
-
-  // Legend
-  const lx=canvas.width-140, ly=canvas.height-108;
-  ctx.fillStyle='rgba(10,6,2,0.88)';
-  roundRect(ctx, lx-4, ly-8, 138, 105, 2);
-  ctx.fill();
-  ctx.strokeStyle='rgba(184,146,30,0.4)';
-  ctx.lineWidth=1;
-  roundRect(ctx, lx-4, ly-8, 138, 105, 2);
-  ctx.stroke();
-
-  ctx.font='10px Cinzel, serif'; ctx.textAlign='left';
-  [['rgba(184,146,30,0.8)','Votre territoire'],['rgba(139,26,26,0.8)','Comte de Blois'],['rgba(26,74,110,0.8)','Duc de Bretagne'],['rgba(45,80,22,0.8)','Abbaye de Clairvaux']].forEach(([col,name],i)=>{
-    ctx.fillStyle=col;
-    ctx.fillRect(lx, ly+i*22, 14, 10);
-    ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=0.5;
-    ctx.strokeRect(lx, ly+i*22, 14, 10);
-    ctx.fillStyle='rgba(228,210,170,0.85)';
-    ctx.fillText(name, lx+20, ly+i*22+9);
-  });
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
-  ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h-r);
-  ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+r,y+h);
-  ctx.arcTo(x,y+h,x,y+h-r,r); ctx.lineTo(x,y+r);
-  ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
-}
-
-let mapAnimFrame;
-function animateMap() {
-  drawMap();
-  mapAnimFrame = requestAnimationFrame(animateMap);
-}
-
-function centerMap() {
-  const cont = document.getElementById('map-container');
-  G.map.scale = 1;
-  G.map.offsetX = cont.clientWidth/2 - 12*TW - TW/2;
-  G.map.offsetY = cont.clientHeight/2 - 8*TH - TH/2;
-}
 
 // ===================== UI =====================
 function updateTopBar() {
@@ -1396,4 +1227,3 @@ window.addEventListener('load',init);
 </script>
 </body>
 </html>
-
