@@ -3,405 +3,634 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Regnum — Prototype</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<title>Regnum — v0.15</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --parchment: #f4e9c9;
-    --parchment-dark: #e8d5a0;
-    --ink: #2a1a0e;
-    --ink-light: #5c3d1e;
-    --blood: #8b1a1a;
-    --blood-light: #c0392b;
-    --gold: #c9a227;
-    --gold-light: #f0c040;
-    --forest: #2d5016;
-    --forest-light: #4a7c25;
-    --stone: #6b6560;
-    --stone-light: #9a928b;
-    --water: #1a4a6e;
-    --water-light: #2980b9;
-    --panel-bg: rgba(42,26,14,0.92);
-    --border-ornate: #c9a227;
-  }
+:root {
+  --parchment: #f5e6c0;
+  --parchment-dark: #dfc898;
+  --parchment-aged: #c8ab6e;
+  --ink: #1c100a;
+  --ink-med: #3a2010;
+  --ink-light: #6b4020;
+  --blood: #7a1515;
+  --blood-mid: #a82020;
+  --gold: #b8921e;
+  --gold-bright: #e8b830;
+  --gold-pale: #f5d878;
+  --forest-dark: #1a3a0a;
+  --forest: #2a5510;
+  --forest-light: #3a7518;
+  --stone: #5a5248;
+  --stone-light: #8a7e74;
+  --water-deep: #0a2840;
+  --water: #163858;
+  --water-light: #2060a0;
+  --panel-bg: rgba(20,12,5,0.96);
+  --panel-border: rgba(184,146,30,0.4);
+  --panel-width: 300px;
+}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  body {
-    background: #1a0f05;
-    color: var(--parchment);
-    font-family: 'Crimson Text', Georgia, serif;
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
-  }
+body {
+  background: #0a0602;
+  color: var(--parchment);
+  font-family: 'Crimson Text', Georgia, serif;
+  overflow: hidden;
+  height: 100vh; width: 100vw;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='2' fill='%23e8b830' opacity='0.8'/%3E%3C/svg%3E") 10 10, default;
+}
 
-  #game-container {
-    display: grid;
-    grid-template-rows: 48px 1fr 160px;
-    grid-template-columns: 260px 1fr 280px;
-    height: 100vh;
-    width: 100vw;
-  }
+/* ===== LAYOUT ===== */
+#game-wrap {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  /* TOP BAR */
-  #topbar {
-    grid-column: 1 / -1;
-    background: linear-gradient(180deg, #1a0f05 0%, #2a1a0e 100%);
-    border-bottom: 1px solid var(--gold);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    gap: 24px;
-    font-family: 'Cinzel', serif;
-  }
+/* ===== TOP BAR ===== */
+#topbar {
+  position: relative;
+  z-index: 50;
+  height: 52px;
+  background: linear-gradient(180deg, #0d0804 0%, #1a0f06 60%, rgba(26,15,6,0.9) 100%);
+  border-bottom: 1px solid var(--gold);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.8);
+}
 
-  #game-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--gold-light);
-    letter-spacing: 3px;
-    margin-right: 12px;
-  }
+/* Gold ornament line */
+#topbar::after {
+  content:'';
+  position:absolute;
+  bottom:-3px; left:0; right:0;
+  height:2px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), var(--gold), var(--gold-bright), transparent);
+  opacity:0.5;
+}
 
-  .resource-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(201,162,39,0.1);
-    border: 1px solid rgba(201,162,39,0.3);
-    border-radius: 3px;
-    padding: 3px 10px;
-    font-size: 12px;
-    color: var(--parchment);
-  }
-  .resource-pill .icon { font-size: 14px; }
-  .resource-pill .val { font-weight: 600; color: var(--gold-light); }
-  .resource-pill .delta { font-size: 10px; color: #80c060; }
-  .resource-pill .delta.neg { color: var(--blood-light); }
+#game-title {
+  font-family:'Cinzel',serif;
+  font-size:20px;
+  font-weight:900;
+  color:var(--gold-bright);
+  letter-spacing:5px;
+  text-shadow:0 0 20px rgba(232,184,48,0.5), 0 2px 4px rgba(0,0,0,0.8);
+  margin-right:6px;
+  flex-shrink:0;
+}
 
-  #date-display {
-    margin-left: auto;
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    color: var(--parchment-dark);
-    letter-spacing: 1px;
-  }
+.res-chip {
+  display:flex; align-items:center; gap:4px;
+  background: linear-gradient(135deg, rgba(184,146,30,0.08), rgba(184,146,30,0.04));
+  border: 1px solid rgba(184,146,30,0.25);
+  border-radius:2px;
+  padding:3px 9px;
+  font-size:13px;
+  color:var(--parchment);
+  position:relative;
+  transition: border-color 0.2s;
+}
+.res-chip:hover { border-color:rgba(184,146,30,0.5); }
+.res-chip .icon { font-size:13px; }
+.res-chip .lbl { font-family:'Cinzel',serif; font-size:9px; letter-spacing:1px; color:var(--parchment-aged); }
+.res-chip .val { font-weight:600; color:var(--gold-pale); font-size:14px; }
+.res-chip .delta { font-size:10px; color:#70c050; }
+.res-chip .delta.neg { color:var(--blood-mid); }
 
-  #speed-controls {
-    display: flex;
-    gap: 4px;
-  }
-  .speed-btn {
-    background: rgba(201,162,39,0.1);
-    border: 1px solid rgba(201,162,39,0.3);
-    color: var(--gold-light);
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    padding: 3px 8px;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.15s;
-  }
-  .speed-btn:hover, .speed-btn.active { background: rgba(201,162,39,0.25); }
+#date-display {
+  margin-left:auto;
+  font-family:'IM Fell English',serif;
+  font-size:13px;
+  color:var(--parchment-dark);
+  letter-spacing:0.5px;
+  flex-shrink:0;
+}
 
-  /* LEFT PANEL */
-  #left-panel {
-    background: var(--panel-bg);
-    border-right: 1px solid rgba(201,162,39,0.3);
-    overflow-y: auto;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+#speed-controls { display:flex; gap:3px; flex-shrink:0; }
+.speed-btn {
+  background:rgba(184,146,30,0.08);
+  border:1px solid rgba(184,146,30,0.25);
+  color:var(--gold-bright);
+  font-family:'Cinzel',serif;
+  font-size:10px;
+  padding:3px 8px;
+  cursor:pointer;
+  border-radius:2px;
+  transition:all 0.15s;
+}
+.speed-btn:hover,.speed-btn.active { background:rgba(184,146,30,0.22); border-color:var(--gold); }
 
-  .panel-section {
-    border: 1px solid rgba(201,162,39,0.25);
-    border-radius: 3px;
-    padding: 10px;
-  }
+/* Panel toggle buttons on sides */
+.panel-toggle {
+  position:fixed;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:60;
+  background:linear-gradient(135deg, rgba(20,12,5,0.98), rgba(30,18,8,0.98));
+  border:1px solid var(--gold);
+  color:var(--gold-bright);
+  font-family:'Cinzel',serif;
+  font-size:11px;
+  padding:16px 6px;
+  cursor:pointer;
+  writing-mode:vertical-rl;
+  letter-spacing:2px;
+  transition:all 0.2s;
+  text-shadow:0 0 8px rgba(232,184,48,0.4);
+  box-shadow:0 0 20px rgba(0,0,0,0.8);
+}
+.panel-toggle:hover { background:rgba(184,146,30,0.15); color:var(--gold-pale); }
+#toggle-left {
+  left:0;
+  border-left:none;
+  border-radius:0 3px 3px 0;
+}
+#toggle-right {
+  right:0;
+  border-right:none;
+  border-radius:3px 0 0 3px;
+}
 
-  .section-title {
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    border-bottom: 1px solid rgba(201,162,39,0.2);
-    padding-bottom: 4px;
-  }
+/* ===== MAIN AREA ===== */
+#main-area {
+  flex:1;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+}
 
-  /* Dynasty */
-  .dynasty-name {
-    font-family: 'Cinzel', serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--gold-light);
-  }
-  .ruler-name {
-    font-size: 13px;
-    color: var(--parchment);
-    font-style: italic;
-  }
-  .ruler-traits {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
-  }
-  .trait {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-  }
-  .trait.pos { background: rgba(45,80,22,0.5); border: 1px solid var(--forest-light); color: #8fcc4f; }
-  .trait.neg { background: rgba(139,26,26,0.4); border: 1px solid #8b1a1a; color: #ff7070; }
-  .trait.neu { background: rgba(106,101,96,0.4); border: 1px solid var(--stone); color: #c0b8b0; }
+/* ===== SIDE PANELS ===== */
+.side-panel {
+  position:absolute;
+  top:0; bottom:0;
+  width:var(--panel-width);
+  background: linear-gradient(180deg, rgba(12,7,3,0.98) 0%, rgba(20,12,5,0.97) 100%);
+  border-color: var(--gold);
+  border-style: solid;
+  border-width: 0;
+  z-index:40;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 0 40px rgba(0,0,0,0.9);
+}
 
-  /* Stats bars */
-  .stat-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 5px;
-  }
-  .stat-label {
-    font-size: 11px;
-    color: var(--parchment-dark);
-    width: 60px;
-    flex-shrink: 0;
-  }
-  .stat-bar {
-    flex: 1;
-    height: 6px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .stat-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.4s ease;
-  }
-  .stat-fill.gold { background: var(--gold); }
-  .stat-fill.red  { background: var(--blood-light); }
-  .stat-fill.green{ background: var(--forest-light); }
-  .stat-fill.blue { background: var(--water-light); }
-  .stat-val {
-    font-size: 11px;
-    color: var(--parchment);
-    width: 20px;
-    text-align: right;
-  }
+#left-panel {
+  left:0;
+  border-right-width:1px;
+  border-right-color: var(--gold);
+}
+#left-panel.hidden { transform: translateX(calc(-1 * var(--panel-width))); }
 
-  /* Buildings queue */
-  .build-btn {
-    width: 100%;
-    background: rgba(201,162,39,0.08);
-    border: 1px solid rgba(201,162,39,0.25);
-    color: var(--parchment);
-    font-family: 'Crimson Text', serif;
-    font-size: 12px;
-    padding: 5px 8px;
-    text-align: left;
-    cursor: pointer;
-    border-radius: 2px;
-    margin-bottom: 4px;
-    transition: all 0.15s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .build-btn:hover { background: rgba(201,162,39,0.18); border-color: var(--gold); }
-  .build-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .build-btn .cost { font-size: 10px; color: var(--gold); }
+#right-panel {
+  right:0;
+  border-left-width:1px;
+  border-left-color: var(--gold);
+}
+#right-panel.hidden { transform: translateX(var(--panel-width)); }
 
-  /* MAP */
-  #map-container {
-    position: relative;
-    overflow: hidden;
-    background: #0d1a0a;
-    cursor: grab;
-  }
-  #map-container:active { cursor: grabbing; }
+/* Ornate panel header */
+.panel-header {
+  padding:12px 16px 8px;
+  border-bottom:1px solid rgba(184,146,30,0.3);
+  background: linear-gradient(180deg, rgba(184,146,30,0.08), transparent);
+  flex-shrink:0;
+  text-align:center;
+}
+.panel-header-title {
+  font-family:'Cinzel',serif;
+  font-size:11px;
+  letter-spacing:3px;
+  color:var(--gold);
+  text-transform:uppercase;
+}
+.panel-ornament {
+  color:var(--gold);
+  font-size:10px;
+  opacity:0.5;
+  margin-top:2px;
+}
 
-  #map-canvas {
-    position: absolute;
-    top: 0; left: 0;
-  }
+.panel-body {
+  flex:1;
+  overflow-y:auto;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  scrollbar-width:thin;
+  scrollbar-color: rgba(184,146,30,0.3) transparent;
+}
+.panel-body::-webkit-scrollbar { width:3px; }
+.panel-body::-webkit-scrollbar-thumb { background:rgba(184,146,30,0.3); }
 
-  #tooltip {
-    position: absolute;
-    background: var(--panel-bg);
-    border: 1px solid var(--gold);
-    border-radius: 3px;
-    padding: 8px 12px;
-    font-size: 12px;
-    pointer-events: none;
-    display: none;
-    z-index: 10;
-    max-width: 180px;
-  }
-  #tooltip .tt-title { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold-light); margin-bottom: 4px; }
+/* Panel sections */
+.psect {
+  border:1px solid rgba(184,146,30,0.2);
+  border-radius:2px;
+  padding:10px;
+  background:rgba(184,146,30,0.02);
+  position:relative;
+}
+.psect::before {
+  content:'';
+  position:absolute;
+  top:0; left:10%; right:10%; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(184,146,30,0.4), transparent);
+}
+.psect-title {
+  font-family:'Cinzel',serif;
+  font-size:9px;
+  letter-spacing:2px;
+  color:var(--gold);
+  text-transform:uppercase;
+  margin-bottom:8px;
+  opacity:0.85;
+}
 
-  /* RIGHT PANEL */
-  #right-panel {
-    background: var(--panel-bg);
-    border-left: 1px solid rgba(201,162,39,0.3);
-    overflow-y: auto;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+/* Dynasty */
+.dynasty-name {
+  font-family:'Cinzel',serif;
+  font-size:15px;
+  font-weight:700;
+  color:var(--gold-pale);
+  text-shadow:0 0 12px rgba(232,184,48,0.3);
+}
+.ruler-name {
+  font-family:'IM Fell English',serif;
+  font-size:13px;
+  color:var(--parchment);
+  font-style:italic;
+  margin-top:2px;
+}
+.ruler-traits {
+  display:flex; flex-wrap:wrap; gap:4px; margin-top:7px;
+}
+.trait {
+  font-size:9px; padding:2px 8px; border-radius:1px;
+  font-family:'Cinzel',serif; letter-spacing:0.5px;
+}
+.trait.pos { background:rgba(42,85,16,0.4); border:1px solid rgba(58,117,24,0.5); color:#9de060; }
+.trait.neg { background:rgba(120,20,20,0.35); border:1px solid rgba(168,32,32,0.4); color:#ff8080; }
+.trait.neu { background:rgba(90,82,72,0.3); border:1px solid rgba(138,126,116,0.3); color:#c0b8a8; }
 
-  /* Events */
-  .event-card {
-    border: 1px solid rgba(201,162,39,0.3);
-    border-radius: 3px;
-    padding: 10px;
-    margin-bottom: 8px;
-    background: rgba(201,162,39,0.05);
-    animation: fadeIn 0.4s ease;
-  }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-  .event-title {
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    color: var(--gold-light);
-    margin-bottom: 4px;
-  }
-  .event-text {
-    font-size: 12px;
-    color: var(--parchment-dark);
-    font-style: italic;
-    margin-bottom: 8px;
-    line-height: 1.5;
-  }
-  .event-choices {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .choice-btn {
-    background: rgba(201,162,39,0.1);
-    border: 1px solid rgba(201,162,39,0.3);
-    color: var(--parchment);
-    font-family: 'Crimson Text', serif;
-    font-size: 12px;
-    padding: 5px 8px;
-    cursor: pointer;
-    border-radius: 2px;
-    text-align: left;
-    transition: all 0.15s;
-  }
-  .choice-btn:hover { background: rgba(201,162,39,0.25); }
+/* Stat bars */
+.stat-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+.stat-label { font-size:11px; color:var(--parchment-dark); width:64px; flex-shrink:0; }
+.stat-bar {
+  flex:1; height:5px;
+  background:rgba(255,255,255,0.07);
+  border-radius:1px; overflow:hidden;
+}
+.stat-fill { height:100%; border-radius:1px; transition:width 0.5s ease; }
+.stat-fill.gold { background:linear-gradient(90deg, var(--gold), var(--gold-bright)); }
+.stat-fill.red { background:linear-gradient(90deg, var(--blood), var(--blood-mid)); }
+.stat-fill.green { background:linear-gradient(90deg, var(--forest), var(--forest-light)); }
+.stat-fill.blue { background:linear-gradient(90deg, var(--water), var(--water-light)); }
+.stat-val { font-size:11px; color:var(--parchment); width:18px; text-align:right; }
 
-  /* BOTTOM PANEL */
-  #bottom-panel {
-    grid-column: 1 / -1;
-    background: var(--panel-bg);
-    border-top: 1px solid rgba(201,162,39,0.3);
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1px;
-    background-color: rgba(201,162,39,0.15);
-  }
-  .bottom-tab {
-    background: var(--panel-bg);
-    padding: 10px 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .bottom-tab:hover { background: rgba(201,162,39,0.1); }
-  .bottom-tab.active { background: rgba(201,162,39,0.15); }
-  .tab-title {
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    color: var(--gold);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-  }
-  .tab-content {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .mini-stat {
-    font-size: 11px;
-    color: var(--parchment-dark);
-  }
-  .mini-stat span { color: var(--parchment); font-weight: 600; }
+/* Build buttons */
+.build-btn {
+  width:100%;
+  background:rgba(184,146,30,0.06);
+  border:1px solid rgba(184,146,30,0.2);
+  color:var(--parchment);
+  font-family:'Crimson Text',serif;
+  font-size:12px;
+  padding:6px 8px;
+  text-align:left;
+  cursor:pointer;
+  border-radius:1px;
+  margin-bottom:3px;
+  transition:all 0.15s;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  line-height:1.3;
+}
+.build-btn:hover:not(:disabled) { background:rgba(184,146,30,0.14); border-color:var(--gold); }
+.build-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.build-btn .cost { font-size:10px; color:var(--gold); white-space:nowrap; margin-left:6px; }
 
-  /* Pop item */
-  .pop-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    padding: 3px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    color: var(--parchment-dark);
-  }
-  .pop-row .pop-name { color: var(--parchment); }
+/* Pop rows */
+.pop-row {
+  display:flex; justify-content:space-between;
+  font-size:12px; padding:3px 0;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  color:var(--parchment-dark);
+}
+.pop-row .pop-name { color:var(--parchment); }
 
-  /* Log */
-  #log-list {
-    max-height: 90px;
-    overflow-y: auto;
-    font-size: 11px;
-    color: var(--parchment-dark);
-  }
-  .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); line-height: 1.4; }
-  .log-entry .log-date { color: var(--gold); font-family: 'Cinzel', serif; font-size: 10px; }
+/* Events */
+.event-card {
+  border:1px solid rgba(184,146,30,0.3);
+  border-radius:2px;
+  padding:10px;
+  margin-bottom:6px;
+  background:linear-gradient(135deg, rgba(184,146,30,0.06), rgba(184,146,30,0.02));
+  animation:slideIn 0.3s ease;
+}
+@keyframes slideIn { from{opacity:0;transform:translateX(12px)} to{opacity:1;transform:translateX(0)} }
+.event-title {
+  font-family:'Cinzel',serif;
+  font-size:11px;
+  color:var(--gold-pale);
+  margin-bottom:5px;
+  letter-spacing:0.5px;
+}
+.event-text {
+  font-family:'IM Fell English',serif;
+  font-size:12px;
+  color:var(--parchment-dark);
+  font-style:italic;
+  margin-bottom:8px;
+  line-height:1.6;
+}
+.event-choices { display:flex; flex-direction:column; gap:3px; }
+.choice-btn {
+  background:rgba(184,146,30,0.08);
+  border:1px solid rgba(184,146,30,0.25);
+  color:var(--parchment);
+  font-family:'Crimson Text',serif;
+  font-size:11px;
+  padding:5px 8px;
+  cursor:pointer;
+  border-radius:1px;
+  text-align:left;
+  transition:all 0.15s;
+  line-height:1.4;
+}
+.choice-btn:hover { background:rgba(184,146,30,0.2); border-color:var(--gold); }
 
-  /* Notification flash */
-  .notif {
-    position: fixed;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(42,26,14,0.95);
-    border: 1px solid var(--gold);
-    padding: 8px 20px;
-    font-family: 'Cinzel', serif;
-    font-size: 13px;
-    color: var(--gold-light);
-    border-radius: 3px;
-    z-index: 100;
-    animation: notifAnim 2.5s ease forwards;
-    pointer-events: none;
-  }
-  @keyframes notifAnim {
-    0% { opacity:0; transform:translateX(-50%) translateY(-8px); }
-    15% { opacity:1; transform:translateX(-50%) translateY(0); }
-    75% { opacity:1; }
-    100% { opacity:0; }
-  }
+/* Relations */
+.rel-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:12px;
+}
+.rel-bar-wrap { flex:1; margin:0 8px; height:3px; background:rgba(255,255,255,0.08); border-radius:1px; overflow:hidden; }
+.rel-bar { height:100%; border-radius:1px; transition:width 0.5s; }
 
-  scrollbar-width: thin;
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(201,162,39,0.3); border-radius: 2px; }
+/* Log */
+#log-list { font-size:11px; color:var(--parchment-dark); max-height:140px; overflow-y:auto; }
+.log-entry { padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.04); line-height:1.5; }
+.log-date { color:var(--gold); font-family:'Cinzel',serif; font-size:9px; }
+
+/* ===== MAP ===== */
+#map-container {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  background: radial-gradient(ellipse at 50% 40%, #1a2a10 0%, #0d1808 40%, #060c04 100%);
+  cursor:grab;
+}
+#map-container:active { cursor:grabbing; }
+#map-canvas { position:absolute; top:0; left:0; image-rendering:pixelated; }
+
+/* Vignette overlay */
+#map-vignette {
+  position:absolute;
+  inset:0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.7) 100%);
+  pointer-events:none;
+  z-index:2;
+}
+
+/* Tooltip */
+#tooltip {
+  position:absolute;
+  background:linear-gradient(135deg, rgba(12,7,3,0.98), rgba(20,12,5,0.96));
+  border:1px solid var(--gold);
+  border-radius:2px;
+  padding:10px 14px;
+  font-size:12px;
+  pointer-events:none;
+  display:none;
+  z-index:20;
+  max-width:200px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.8);
+}
+#tooltip::before {
+  content:'';
+  position:absolute;
+  top:0; left:10%; right:10%; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+}
+.tt-title { font-family:'Cinzel',serif; font-size:12px; color:var(--gold-pale); margin-bottom:5px; }
+.tt-body { color:var(--parchment-dark); line-height:1.6; }
+
+/* ===== BOTTOM DOCK ===== */
+#bottom-dock {
+  position:relative;
+  z-index:45;
+  height:44px;
+  background:linear-gradient(0deg, #080503 0%, rgba(12,7,3,0.97) 100%);
+  border-top:1px solid var(--gold);
+  display:flex;
+  align-items:stretch;
+  box-shadow:0 -2px 20px rgba(0,0,0,0.8);
+}
+#bottom-dock::before {
+  content:'';
+  position:absolute;
+  top:-3px; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent, var(--gold-bright), var(--gold), var(--gold-bright), transparent);
+  opacity:0.4;
+}
+
+.dock-tab {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  cursor:pointer;
+  font-family:'Cinzel',serif;
+  font-size:10px;
+  letter-spacing:1.5px;
+  color:var(--parchment-aged);
+  border-right:1px solid rgba(184,146,30,0.15);
+  transition:all 0.2s;
+  position:relative;
+}
+.dock-tab:last-child { border-right:none; }
+.dock-tab:hover { background:rgba(184,146,30,0.08); color:var(--gold-pale); }
+.dock-tab.active {
+  background:rgba(184,146,30,0.12);
+  color:var(--gold-bright);
+}
+.dock-tab.active::after {
+  content:'';
+  position:absolute;
+  top:0; left:10%; right:10%; height:2px;
+  background:linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+}
+.dock-icon { font-size:16px; }
+
+/* ===== BOTTOM PANEL (expanded) ===== */
+#bottom-panel {
+  position:relative;
+  z-index:44;
+  background:linear-gradient(0deg, rgba(8,5,3,0.99), rgba(16,10,4,0.97));
+  border-top:1px solid rgba(184,146,30,0.2);
+  overflow:hidden;
+  transition: height 0.3s cubic-bezier(0.4,0,0.2,1);
+  height:0;
+}
+#bottom-panel.open { height:160px; }
+.bp-content { padding:12px 16px; display:flex; gap:16px; height:100%; overflow-x:auto; }
+.bp-col { flex:1; min-width:140px; }
+.bp-col-title {
+  font-family:'Cinzel',serif;
+  font-size:10px;
+  letter-spacing:2px;
+  color:var(--gold);
+  margin-bottom:8px;
+  text-transform:uppercase;
+  opacity:0.8;
+}
+.mini-stat { font-size:12px; color:var(--parchment-dark); padding:2px 0; }
+.mini-stat span { color:var(--parchment); font-weight:600; }
+.tech-row { display:flex; align-items:center; justify-content:space-between; font-size:11px; padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.tech-btn {
+  background:rgba(184,146,30,0.1);
+  border:1px solid rgba(184,146,30,0.3);
+  color:var(--gold);
+  font-family:'Cinzel',serif;
+  font-size:9px;
+  padding:2px 6px;
+  cursor:pointer;
+  border-radius:1px;
+  transition:all 0.15s;
+}
+.tech-btn:hover { background:rgba(184,146,30,0.22); }
+
+/* ===== NOTIFICATION ===== */
+.notif {
+  position:fixed;
+  top:68px; left:50%;
+  transform:translateX(-50%);
+  background:linear-gradient(135deg, rgba(12,7,3,0.98), rgba(20,12,5,0.96));
+  border:1px solid var(--gold);
+  padding:8px 24px;
+  font-family:'Cinzel',serif;
+  font-size:12px;
+  color:var(--gold-pale);
+  border-radius:2px;
+  z-index:200;
+  animation:notifPop 2.8s ease forwards;
+  pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,0.8);
+  white-space:nowrap;
+}
+@keyframes notifPop {
+  0%{opacity:0;transform:translateX(-50%) translateY(-10px)}
+  12%{opacity:1;transform:translateX(-50%) translateY(0)}
+  80%{opacity:1}
+  100%{opacity:0}
+}
+
+/* Build progress */
+#build-progress-wrap {
+  display:none;
+  margin-top:6px;
+  padding:6px;
+  background:rgba(184,146,30,0.05);
+  border:1px solid rgba(184,146,30,0.2);
+  border-radius:1px;
+}
+.build-progress-bar-bg {
+  height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden;
+}
+.build-progress-bar {
+  height:100%; background:linear-gradient(90deg, var(--gold), var(--gold-bright));
+  border-radius:2px; transition:width 0.2s;
+}
+
+/* Season indicator */
+#season-badge {
+  position:absolute;
+  bottom:12px; left:50%;
+  transform:translateX(-50%);
+  z-index:5;
+  pointer-events:none;
+  font-family:'Cinzel',serif;
+  font-size:10px;
+  letter-spacing:2px;
+  color:rgba(232,184,48,0.5);
+  text-transform:uppercase;
+}
+
+/* Map compass */
+#compass {
+  position:absolute;
+  top:14px; right:14px;
+  z-index:5;
+  pointer-events:none;
+  font-size:28px;
+  opacity:0.35;
+  text-shadow:0 2px 8px rgba(0,0,0,0.8);
+}
+
+/* Map center button */
+#center-map-btn {
+  position:absolute;
+  bottom:12px; right:14px;
+  z-index:10;
+  background:rgba(12,7,3,0.85);
+  border:1px solid rgba(184,146,30,0.4);
+  color:var(--gold);
+  font-family:'Cinzel',serif;
+  font-size:9px;
+  padding:5px 10px;
+  cursor:pointer;
+  border-radius:1px;
+  letter-spacing:1px;
+  transition:all 0.15s;
+}
+#center-map-btn:hover { background:rgba(184,146,30,0.1); }
 </style>
 </head>
 <body>
 
-<div id="game-container">
+<div id="game-wrap">
 
   <!-- TOP BAR -->
   <div id="topbar">
     <div id="game-title">⚔ REGNUM</div>
-    <div class="resource-pill"><span class="icon">🪙</span><span>Or</span><span class="val" id="res-gold">0</span><span class="delta" id="delta-gold">+0</span></div>
-    <div class="resource-pill"><span class="icon">🌾</span><span>Blé</span><span class="val" id="res-food">0</span><span class="delta" id="delta-food">+0</span></div>
-    <div class="resource-pill"><span class="icon">🪵</span><span>Bois</span><span class="val" id="res-wood">0</span><span class="delta" id="delta-wood">+0</span></div>
-    <div class="resource-pill"><span class="icon">🪨</span><span>Pierre</span><span class="val" id="res-stone">0</span><span class="delta" id="delta-stone">+0</span></div>
-    <div class="resource-pill"><span class="icon">⚔</span><span>Armée</span><span class="val" id="res-army">0</span></div>
-    <div class="resource-pill"><span class="icon">😊</span><span>Bonheur</span><span class="val" id="res-happiness">0</span>%</div>
-    <div id="date-display" id="date">Printemps, An 1047</div>
+    <div class="res-chip">
+      <span class="icon">🪙</span>
+      <div><div class="lbl">OR</div><div style="display:flex;align-items:baseline;gap:3px"><span class="val" id="res-gold">0</span><span class="delta" id="delta-gold">+0</span></div></div>
+    </div>
+    <div class="res-chip">
+      <span class="icon">🌾</span>
+      <div><div class="lbl">BLÉ</div><div style="display:flex;align-items:baseline;gap:3px"><span class="val" id="res-food">0</span><span class="delta" id="delta-food">+0</span></div></div>
+    </div>
+    <div class="res-chip">
+      <span class="icon">🪵</span>
+      <div><div class="lbl">BOIS</div><div style="display:flex;align-items:baseline;gap:3px"><span class="val" id="res-wood">0</span><span class="delta" id="delta-wood">+0</span></div></div>
+    </div>
+    <div class="res-chip">
+      <span class="icon">🪨</span>
+      <div><div class="lbl">PIERRE</div><div style="display:flex;align-items:baseline;gap:3px"><span class="val" id="res-stone">0</span><span class="delta" id="delta-stone">+0</span></div></div>
+    </div>
+    <div class="res-chip">
+      <span class="icon">⚔</span>
+      <div><div class="lbl">ARMÉE</div><span class="val" id="res-army">0</span></div>
+    </div>
+    <div class="res-chip">
+      <span class="icon">😊</span>
+      <div><div class="lbl">BONHEUR</div><span class="val" id="res-happiness">0</span>%</div>
+    </div>
+    <div id="date-display">Printemps, An 1047</div>
     <div id="speed-controls">
       <button class="speed-btn" onclick="setSpeed(0)" id="btn-pause">⏸</button>
       <button class="speed-btn active" onclick="setSpeed(1)" id="btn-s1">▶</button>
@@ -410,101 +639,133 @@
     </div>
   </div>
 
-  <!-- LEFT PANEL -->
-  <div id="left-panel">
+  <!-- MAIN AREA -->
+  <div id="main-area">
 
-    <div class="panel-section">
-      <div class="section-title">Dynastie</div>
-      <div class="dynasty-name" id="dynasty-name">Maison d'Auvray</div>
-      <div class="ruler-name" id="ruler-name">Seigneur Henri d'Auvray</div>
-      <div class="ruler-traits" id="ruler-traits"></div>
+    <!-- LEFT PANEL TOGGLE -->
+    <button class="panel-toggle" id="toggle-left" onclick="togglePanel('left')">DOMAINE</button>
+
+    <!-- LEFT PANEL -->
+    <div class="side-panel" id="left-panel">
+      <div class="panel-header">
+        <div class="panel-header-title">Domaine</div>
+        <div class="panel-ornament">✦ ✦ ✦</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="psect">
+          <div class="psect-title">Dynastie</div>
+          <div class="dynasty-name" id="dynasty-name">Maison d'Auvray</div>
+          <div class="ruler-name" id="ruler-name">Seigneur Henri d'Auvray</div>
+          <div class="ruler-traits" id="ruler-traits"></div>
+        </div>
+
+        <div class="psect">
+          <div class="psect-title">Attributs</div>
+          <div class="stat-row">
+            <span class="stat-label">Diplomatie</span>
+            <div class="stat-bar"><div class="stat-fill blue" id="stat-diplo" style="width:60%"></div></div>
+            <span class="stat-val" id="val-diplo">12</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Martial</span>
+            <div class="stat-bar"><div class="stat-fill red" id="stat-martial" style="width:50%"></div></div>
+            <span class="stat-val" id="val-martial">10</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Gestion</span>
+            <div class="stat-bar"><div class="stat-fill gold" id="stat-steward" style="width:70%"></div></div>
+            <span class="stat-val" id="val-steward">14</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Intrigue</span>
+            <div class="stat-bar"><div class="stat-fill red" id="stat-intrigue" style="width:30%"></div></div>
+            <span class="stat-val" id="val-intrigue">6</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Savoir</span>
+            <div class="stat-bar"><div class="stat-fill green" id="stat-learning" style="width:55%"></div></div>
+            <span class="stat-val" id="val-learning">11</span>
+          </div>
+        </div>
+
+        <div class="psect">
+          <div class="psect-title">Construire</div>
+          <div id="build-list"></div>
+          <div id="build-progress-wrap">
+            <div style="font-size:10px;color:var(--gold);margin-bottom:4px;font-family:'Cinzel',serif" id="build-progress-label">En construction...</div>
+            <div class="build-progress-bar-bg"><div class="build-progress-bar" id="build-progress-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="psect">
+          <div class="psect-title">Population</div>
+          <div id="pop-list"></div>
+        </div>
+
+      </div>
     </div>
 
-    <div class="panel-section">
-      <div class="section-title">Attributs du Seigneur</div>
-      <div class="stat-row">
-        <span class="stat-label">Diplomatie</span>
-        <div class="stat-bar"><div class="stat-fill blue" id="stat-diplo" style="width:60%"></div></div>
-        <span class="stat-val" id="val-diplo">12</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Martial</span>
-        <div class="stat-bar"><div class="stat-fill red" id="stat-martial" style="width:50%"></div></div>
-        <span class="stat-val" id="val-martial">10</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Gestion</span>
-        <div class="stat-bar"><div class="stat-fill gold" id="stat-steward" style="width:70%"></div></div>
-        <span class="stat-val" id="val-steward">14</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Intrigue</span>
-        <div class="stat-bar"><div class="stat-fill red" id="stat-intrigue" style="width:30%"></div></div>
-        <span class="stat-val" id="val-intrigue">6</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Savoir</span>
-        <div class="stat-bar"><div class="stat-fill green" id="stat-learning" style="width:55%"></div></div>
-        <span class="stat-val" id="val-learning">11</span>
-      </div>
+    <!-- MAP AREA -->
+    <div id="map-container">
+      <canvas id="map-canvas"></canvas>
+      <div id="map-vignette"></div>
+      <div id="tooltip"><div class="tt-title" id="tt-title"></div><div class="tt-body" id="tt-body"></div></div>
+      <div id="compass">🧭</div>
+      <div id="season-badge"></div>
+      <button id="center-map-btn" onclick="centerMap()">⊕ CENTRER</button>
     </div>
 
-    <div class="panel-section">
-      <div class="section-title">Construire</div>
-      <div id="build-list"></div>
-    </div>
+    <!-- RIGHT PANEL TOGGLE -->
+    <button class="panel-toggle" id="toggle-right" onclick="togglePanel('right')">CONSEIL</button>
 
-    <div class="panel-section">
-      <div class="section-title">Population</div>
-      <div id="pop-list"></div>
+    <!-- RIGHT PANEL -->
+    <div class="side-panel" id="right-panel">
+      <div class="panel-header">
+        <div class="panel-header-title">Conseil</div>
+        <div class="panel-ornament">✦ ✦ ✦</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="psect">
+          <div class="psect-title">Événements</div>
+          <div id="events-list"><div style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:var(--parchment-aged);text-align:center;padding:8px 0">Aucun événement...</div></div>
+        </div>
+
+        <div class="psect">
+          <div class="psect-title">Relations diplomatiques</div>
+          <div id="relations-list"></div>
+        </div>
+
+        <div class="psect">
+          <div class="psect-title">Journal de règne</div>
+          <div id="log-list"></div>
+        </div>
+
+      </div>
     </div>
 
   </div>
 
-  <!-- MAP -->
-  <div id="map-container">
-    <canvas id="map-canvas"></canvas>
-    <div id="tooltip"><div class="tt-title" id="tt-title"></div><div id="tt-body"></div></div>
-  </div>
-
-  <!-- RIGHT PANEL -->
-  <div id="right-panel">
-    <div class="panel-section">
-      <div class="section-title">Événements</div>
-      <div id="events-list"></div>
+  <!-- BOTTOM DOCK -->
+  <div id="bottom-dock">
+    <div class="dock-tab active" id="tab-economy" onclick="selectTab('economy')">
+      <span class="dock-icon">💰</span><span>ÉCONOMIE</span>
     </div>
-    <div class="panel-section">
-      <div class="section-title">Relations</div>
-      <div id="relations-list"></div>
+    <div class="dock-tab" id="tab-military" onclick="selectTab('military')">
+      <span class="dock-icon">⚔</span><span>ARMÉE</span>
     </div>
-    <div class="panel-section">
-      <div class="section-title">Journal</div>
-      <div id="log-list"></div>
+    <div class="dock-tab" id="tab-diplomacy" onclick="selectTab('diplomacy')">
+      <span class="dock-icon">🤝</span><span>DIPLOMATIE</span>
+    </div>
+    <div class="dock-tab" id="tab-tech" onclick="selectTab('tech')">
+      <span class="dock-icon">📜</span><span>TECHNOLOGIES</span>
     </div>
   </div>
 
-  <!-- BOTTOM PANEL -->
+  <!-- BOTTOM PANEL EXPANDABLE -->
   <div id="bottom-panel">
-    <div class="bottom-tab active" id="tab-economy" onclick="selectTab('economy')">
-      <div class="tab-title">Économie</div>
-      <div class="tab-content" id="tab-economy-content"></div>
-    </div>
-    <div class="bottom-tab" id="tab-military" onclick="selectTab('military')">
-      <div class="tab-title">Armée</div>
-      <div class="tab-content" id="tab-military-content"></div>
-    </div>
-    <div class="bottom-tab" id="tab-diplomacy" onclick="selectTab('diplomacy')">
-      <div class="tab-title">Diplomatie</div>
-      <div class="tab-content" id="tab-diplomacy-content"></div>
-    </div>
-    <div class="bottom-tab" id="tab-tech" onclick="selectTab('tech')">
-      <div class="tab-title">Technologies</div>
-      <div class="tab-content" id="tab-tech-content"></div>
-    </div>
-    <div class="bottom-tab" id="tab-map" onclick="selectTab('map')">
-      <div class="tab-title">Carte</div>
-      <div class="tab-content" id="tab-map-content"></div>
-    </div>
+    <div class="bp-content" id="bp-content"></div>
   </div>
 
 </div>
@@ -512,138 +773,128 @@
 <script>
 // ===================== GAME STATE =====================
 const G = {
-  year: 1047,
-  season: 0, // 0=Spring 1=Summer 2=Autumn 3=Winter
-  day: 0,
-  speed: 1,
-  tickInterval: null,
-  tick: 0,
-
-  resources: {
-    gold: 200, food: 150, wood: 100, stone: 50, iron: 20
-  },
+  year: 1047, season: 0, day: 0, speed: 1,
+  tickInterval: null, tick: 0,
+  resources: { gold: 200, food: 150, wood: 100, stone: 50, iron: 20 },
   deltas: { gold: 0, food: 0, wood: 0, stone: 0 },
-
   ruler: {
-    name: 'Henri d\'Auvray',
-    dynasty: 'Maison d\'Auvray',
-    age: 34,
+    name: "Henri d'Auvray", dynasty: "Maison d'Auvray", age: 34,
     diplo: 12, martial: 10, steward: 14, intrigue: 6, learning: 11,
-    traits: [
-      { name: 'Juste', type: 'pos' },
-      { name: 'Courageux', type: 'pos' },
-      { name: 'Avide', type: 'neg' }
-    ],
+    traits: [{ name: 'Juste', type: 'pos' }, { name: 'Courageux', type: 'pos' }, { name: 'Avide', type: 'neg' }],
     piety: 40, prestige: 60
   },
-
-  pop: {
-    peasants: 120,
-    craftsmen: 30,
-    knights: 8,
-    clergy: 5
-  },
-
+  pop: { peasants: 120, craftsmen: 30, knights: 8, clergy: 5 },
   army: { infantry: 40, cavalry: 8, total: 48 },
   happiness: 72,
-
-  buildings: [],
-  buildQueue: null,
-
+  buildings: [], buildQueue: null,
   neighbors: [
     { name: 'Comte de Blois', relation: 20, strength: 'Fort', color: '#8b1a1a' },
     { name: 'Duc de Bretagne', relation: 60, strength: 'Égal', color: '#1a4a6e' },
     { name: 'Abbaye de Clairvaux', relation: 80, strength: 'Faible', color: '#2d5016' }
   ],
-
   techs: [
     { name: 'Agriculture avancée', cost: 200, done: false, effect: '+20% nourriture' },
     { name: 'Fortifications', cost: 300, done: false, effect: '+30% défense' },
     { name: 'Commerce', cost: 250, done: false, effect: '+25% or' },
     { name: 'Chevalerie', cost: 400, done: false, effect: '+2 cavaliers/an' },
   ],
-
   buildingTypes: [
     { id: 'farm', name: 'Ferme', icon: '🌾', cost: { wood: 30, gold: 50 }, effect: '+8 blé/tour', built: 0 },
     { id: 'sawmill', name: 'Scierie', icon: '🪵', cost: { gold: 60 }, effect: '+6 bois/tour', built: 0 },
-    { id: 'mine', name: 'Mine de pierre', icon: '🪨', cost: { wood: 40, gold: 70 }, effect: '+5 pierre/tour', built: 0 },
+    { id: 'mine', name: 'Mine', icon: '🪨', cost: { wood: 40, gold: 70 }, effect: '+5 pierre/tour', built: 0 },
     { id: 'market', name: 'Marché', icon: '🏪', cost: { wood: 50, stone: 20, gold: 100 }, effect: '+15 or/tour', built: 0 },
     { id: 'barracks', name: 'Caserne', icon: '⚔', cost: { stone: 40, gold: 120 }, effect: '+5 soldats', built: 0 },
     { id: 'church', name: 'Église', icon: '⛪', cost: { stone: 60, gold: 150 }, effect: '+10 bonheur', built: 0 },
     { id: 'walls', name: 'Remparts', icon: '🏰', cost: { stone: 100, gold: 200 }, effect: '+40% défense', built: 0 },
     { id: 'forge', name: 'Forge', icon: '🔨', cost: { stone: 30, wood: 20, gold: 80 }, effect: '+4 fer/tour', built: 0 },
   ],
-
-  log: [],
-  pendingEvents: [],
-  eventPool: [],
-
-  map: { offsetX: 0, offsetY: 0, scale: 1, dragging: false, lastX: 0, lastY: 0 },
-  tiles: [],
-  selectedTile: null,
+  log: [], pendingEvents: [],
+  map: { offsetX: 0, offsetY: 0, scale: 1, dragging: false, lastX: 0, lastY: 0, dragMoved: false },
+  tiles: [], selectedTile: null,
 };
 
 const SEASONS = ['Printemps', 'Été', 'Automne', 'Hiver'];
-const SEASON_COLORS = ['#2d6e2d', '#4a8a1a', '#8a6a1a', '#4a5a6a'];
+const SEASON_BG = ['#1a2e0a', '#1e3208', '#2a1e08', '#0c1620'];
+
+// ===================== PANEL TOGGLE =====================
+function togglePanel(side) {
+  const panel = document.getElementById(side + '-panel');
+  panel.classList.toggle('hidden');
+  const btn = document.getElementById('toggle-' + side);
+  btn.textContent = panel.classList.contains('hidden')
+    ? (side === 'left' ? 'DOMAINE' : 'CONSEIL')
+    : (side === 'left' ? '✕' : '✕');
+}
 
 // ===================== MAP GENERATION =====================
 function generateMap() {
-  const W = 22, H = 16;
-  const types = [];
-  // Seed noise
-  const seed = (x, y) => Math.sin(x * 127.1 + y * 311.7) * 43758.5453 % 1;
+  const W = 26, H = 18;
+  const seed = (x, y) => Math.abs(Math.sin(x * 127.1 + y * 311.7) * 43758.5453 % 1);
+  const smooth = (x, y) => {
+    let s = 0, w = 0;
+    for(let dx=-2;dx<=2;dx++) for(let dy=-2;dy<=2;dy++) {
+      const wt = 1/(Math.abs(dx)+Math.abs(dy)+1);
+      s += seed(x+dx,y+dy)*wt; w+=wt;
+    }
+    return s/w;
+  };
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      const n = seed(x, y);
-      const n2 = seed(x+10, y+5);
+      const n = smooth(x, y);
       let type;
-      // Border = water
-      if (x < 2 || y < 2 || x > W-3 || y > H-3) {
-        type = n > 0.6 ? 'water' : 'border';
-      } else if (n < 0.08) type = 'water';
-      else if (n < 0.18) type = 'mountain';
-      else if (n < 0.35) type = 'forest';
-      else if (n < 0.65) type = 'plains';
-      else if (n < 0.75) type = 'hills';
+      if (x < 2 || y < 2 || x > W-3 || y > H-3) type = seed(x*3,y*3) > 0.5 ? 'water' : 'water';
+      else if (n < 0.12) type = 'water';
+      else if (n < 0.22) type = 'mountain';
+      else if (n < 0.38) type = 'forest';
+      else if (n < 0.68) type = 'plains';
+      else if (n < 0.80) type = 'hills';
       else type = 'plains';
 
-      // Special tiles
       let special = null;
-      if (x === 10 && y === 7) { type = 'capital'; special = 'capital'; }
-      else if (x === 6 && y === 9) special = 'village';
-      else if (x === 14 && y === 5) special = 'village';
-      else if (x === 12 && y === 11) special = 'ruin';
-      else if (x === 8 && y === 4) special = 'monastery';
+      const cx=12,cy=8;
+      if (x===cx && y===cy) { type='capital'; special='capital'; }
+      else if (x===7 && y===10) special='village';
+      else if (x===16 && y===6) special='village';
+      else if (x===14 && y===13) special='ruin';
+      else if (x===9 && y===5) special='monastery';
+      else if (x===18 && y===11) special='village';
 
-      types.push({ x, y, type, special, owner: null, building: null });
+      G.tiles.push({ x, y, type, special, owner: null });
     }
   }
-  G.tiles = types;
-  // Mark player territory
-  const playerTiles = [[9,6],[10,6],[11,6],[9,7],[10,7],[11,7],[9,8],[10,8],[11,8],[8,7],[12,7]];
+  const playerTiles = [];
+  for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) playerTiles.push([12+dx,8+dy]);
+  playerTiles.push([11,7],[13,7],[11,9],[13,9],[10,8],[14,8]);
   playerTiles.forEach(([tx,ty]) => {
-    const t = G.tiles.find(t => t.x===tx && t.y===ty);
-    if (t) t.owner = 'player';
+    const t = G.tiles.find(t=>t.x===tx&&t.y===ty);
+    if(t) t.owner='player';
   });
-  // Mark neighbor territories
-  for (let i = 0; i < G.tiles.length; i++) {
-    const t = G.tiles[i];
-    if (t.owner) continue;
-    if (t.x <= 7 && t.y <= 10 && t.type !== 'water') t.owner = 'enemy1';
-    else if (t.x >= 15 && t.type !== 'water') t.owner = 'enemy2';
-    else if (t.y >= 12 && t.type !== 'water') t.owner = 'ally1';
-  }
+  G.tiles.forEach(t => {
+    if(t.owner) return;
+    if(t.x<=8 && t.y<=11 && t.type!=='water') t.owner='enemy1';
+    else if(t.x>=17 && t.type!=='water') t.owner='enemy2';
+    else if(t.y>=14 && t.type!=='water') t.owner='ally1';
+  });
 }
 
 // ===================== MAP RENDERING =====================
-const TILE_W = 52, TILE_H = 44;
-const TILE_COLORS = {
-  plains: '#4a7c25', forest: '#1a5c12', mountain: '#7a7060',
-  hills: '#6a8040', water: '#1a4a8a', border: '#1a3a6a', capital: '#8a6020'
-};
-const TILE_ICONS = {
-  capital: '🏰', village: '🏠', ruin: '🗿', monastery: '⛪'
-};
+const TW=48, TH=40;
+
+// Procedural terrain colors with variation
+function getTileColor(tile, x, y) {
+  const h = Math.abs(Math.sin(x*73.1+y*143.7)*1000)%1;
+  const v = 1 + (h-0.5)*0.15;
+  const colors = {
+    plains: [65+h*15, 110+h*20, 30+h*10],
+    forest: [22+h*8, 70+h*15, 12+h*8],
+    mountain: [105+h*15, 98+h*12, 85+h*10],
+    hills: [80+h*12, 105+h*10, 45+h*8],
+    water: [18+h*8, 60+h*10, 130+h*15],
+    capital: [120+h*10, 90+h*8, 20+h*10],
+  };
+  const c = colors[tile.type] || colors.plains;
+  return `rgb(${Math.floor(c[0]*v)},${Math.floor(c[1]*v)},${Math.floor(c[2]*v)})`;
+}
 
 function drawMap() {
   const canvas = document.getElementById('map-canvas');
@@ -652,541 +903,497 @@ function drawMap() {
   canvas.height = container.clientHeight;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#0d1a0a';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Sky/ground bg
+  const bg = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)*0.7);
+  bg.addColorStop(0, SEASON_BG[G.season]);
+  bg.addColorStop(1, '#040804');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  const ox = G.map.offsetX, oy = G.map.offsetY, sc = G.map.scale;
+  const ox=G.map.offsetX, oy=G.map.offsetY, sc=G.map.scale;
 
   G.tiles.forEach(tile => {
-    const px = tile.x * TILE_W * sc + ox;
-    const py = tile.y * TILE_H * sc + oy;
-    const tw = TILE_W * sc, th = TILE_H * sc;
+    const px = tile.x*TW*sc+ox;
+    const py = tile.y*TH*sc+oy;
+    const tw = TW*sc, th = TH*sc;
+    if(px>canvas.width||py>canvas.height||px+tw<0||py+th<0) return;
 
-    if (px > canvas.width || py > canvas.height || px + tw < 0 || py + th < 0) return;
+    // Draw terrain with color variation
+    let baseColor = getTileColor(tile, tile.x, tile.y);
+    ctx.globalAlpha = tile.owner==='player'?1 : tile.owner?0.78 : 0.52;
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(px+0.5, py+0.5, tw-1, th-1);
+    ctx.globalAlpha=1;
 
-    // Base color
-    let color = TILE_COLORS[tile.type] || '#4a7c25';
-
-    // Owner tint
-    if (tile.owner === 'player') {
-      ctx.globalAlpha = 1;
-    } else if (tile.owner) {
-      ctx.globalAlpha = 0.75;
-    } else {
-      ctx.globalAlpha = 0.55;
+    // Territory overlay
+    const ownerColors = { player:'rgba(184,146,30,0.12)', enemy1:'rgba(139,26,26,0.12)', enemy2:'rgba(26,74,110,0.12)', ally1:'rgba(45,80,22,0.12)' };
+    if(tile.owner && ownerColors[tile.owner]) {
+      ctx.fillStyle=ownerColors[tile.owner];
+      ctx.fillRect(px+0.5, py+0.5, tw-1, th-1);
     }
 
-    ctx.fillStyle = color;
-    ctx.fillRect(px+1, py+1, tw-2, th-2);
-    ctx.globalAlpha = 1;
-
-    // Owner border
-    if (tile.owner === 'player') {
-      ctx.strokeStyle = 'rgba(201,162,39,0.6)';
-      ctx.lineWidth = 1.5 * sc;
-      ctx.strokeRect(px+1, py+1, tw-2, th-2);
-    } else if (tile.owner === 'enemy1') {
-      ctx.strokeStyle = 'rgba(139,26,26,0.5)';
-      ctx.lineWidth = sc;
-      ctx.strokeRect(px+1, py+1, tw-2, th-2);
-    } else if (tile.owner === 'enemy2') {
-      ctx.strokeStyle = 'rgba(26,74,110,0.5)';
-      ctx.lineWidth = sc;
-      ctx.strokeRect(px+1, py+1, tw-2, th-2);
-    } else if (tile.owner === 'ally1') {
-      ctx.strokeStyle = 'rgba(45,80,22,0.5)';
-      ctx.lineWidth = sc;
-      ctx.strokeRect(px+1, py+1, tw-2, th-2);
+    // Texture dots for forest/mountain
+    if(sc>0.6) {
+      const noise = Math.abs(Math.sin(tile.x*53.1+tile.y*97.3)*1000)%1;
+      if(tile.type==='forest') {
+        for(let i=0;i<3;i++) {
+          const nx = noise*tw*0.6+i*tw*0.2;
+          const ny = (Math.abs(Math.sin(tile.x+i)*1000)%1)*th*0.5+th*0.15;
+          ctx.fillStyle='rgba(0,40,0,0.35)';
+          ctx.beginPath();
+          ctx.arc(px+nx, py+ny, 3*sc, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+      if(tile.type==='mountain') {
+        ctx.fillStyle='rgba(255,255,255,0.12)';
+        ctx.beginPath();
+        ctx.moveTo(px+tw*0.3, py+th*0.7);
+        ctx.lineTo(px+tw*0.5, py+th*0.15);
+        ctx.lineTo(px+tw*0.7, py+th*0.7);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
+
+    // Border lines
+    ctx.strokeStyle = tile.owner==='player'
+      ? 'rgba(184,146,30,0.55)' : tile.owner==='enemy1'
+      ? 'rgba(139,26,26,0.4)' : tile.owner==='enemy2'
+      ? 'rgba(26,74,110,0.4)' : tile.owner==='ally1'
+      ? 'rgba(45,80,22,0.4)' : 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = tile.owner==='player' ? 1.5*sc : 0.8*sc;
+    ctx.strokeRect(px+0.5, py+0.5, tw-1, th-1);
 
     // Selected highlight
-    if (G.selectedTile && G.selectedTile.x === tile.x && G.selectedTile.y === tile.y) {
-      ctx.strokeStyle = '#f0c040';
-      ctx.lineWidth = 2.5 * sc;
-      ctx.strokeRect(px+2, py+2, tw-4, th-4);
+    if(G.selectedTile&&G.selectedTile.x===tile.x&&G.selectedTile.y===tile.y) {
+      ctx.strokeStyle='rgba(240,192,64,0.9)';
+      ctx.lineWidth=2.5*sc;
+      ctx.strokeRect(px+1.5,py+1.5,tw-3,th-3);
+      ctx.fillStyle='rgba(240,192,64,0.08)';
+      ctx.fillRect(px+0.5,py+0.5,tw-1,th-1);
     }
 
-    // Icons
-    if (tile.special && sc > 0.5) {
-      ctx.font = `${Math.floor(14 * sc)}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.globalAlpha = 1;
-      ctx.fillText(TILE_ICONS[tile.special] || '', px + tw/2, py + th/2);
+    // Special icons
+    if(tile.special && sc>0.45) {
+      const icons = { capital:'🏰', village:'🏠', ruin:'🗿', monastery:'⛪' };
+      ctx.font=`${Math.floor(16*sc)}px serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.globalAlpha=0.95;
+      ctx.fillText(icons[tile.special]||'', px+tw/2, py+th/2);
+      ctx.globalAlpha=1;
     }
 
-    // Terrain mini indicator
-    if (sc < 0.7 && tile.type === 'forest') {
-      ctx.fillStyle = 'rgba(0,50,0,0.4)';
-      ctx.fillRect(px+tw*0.25, py+th*0.25, tw*0.5, th*0.5);
+    // Water shimmer
+    if(tile.type==='water' && sc>0.7) {
+      const t = Date.now()*0.001;
+      ctx.strokeStyle=`rgba(80,160,220,${0.1+Math.sin(tile.x+tile.y+t)*0.05})`;
+      ctx.lineWidth=0.5;
+      for(let i=0;i<3;i++) {
+        ctx.beginPath();
+        ctx.moveTo(px+tw*0.1, py+th*(0.3+i*0.2));
+        ctx.lineTo(px+tw*0.9, py+th*(0.3+i*0.2));
+        ctx.stroke();
+      }
     }
   });
 
-  // Draw roads between capital and villages
-  ctx.strokeStyle = 'rgba(180,150,80,0.4)';
-  ctx.lineWidth = 1.5 * sc;
-  ctx.setLineDash([3*sc, 3*sc]);
-  [[10,7],[6,9],[14,5]].slice(1).forEach(([tx,ty]) => {
+  // Roads
+  ctx.strokeStyle='rgba(160,130,60,0.35)';
+  ctx.lineWidth=2*sc;
+  ctx.setLineDash([4*sc,3*sc]);
+  [[7,10],[9,5],[16,6],[14,13],[18,11]].forEach(([tx,ty]) => {
     ctx.beginPath();
-    ctx.moveTo(10*TILE_W*sc+ox+TILE_W*sc/2, 7*TILE_H*sc+oy+TILE_H*sc/2);
-    ctx.lineTo(tx*TILE_W*sc+ox+TILE_W*sc/2, ty*TILE_H*sc+oy+TILE_H*sc/2);
+    ctx.moveTo(12*TW*sc+ox+TW*sc/2, 8*TH*sc+oy+TH*sc/2);
+    ctx.lineTo(tx*TW*sc+ox+TW*sc/2, ty*TH*sc+oy+TH*sc/2);
     ctx.stroke();
   });
   ctx.setLineDash([]);
 
+  // Territory name labels (at scale)
+  if(sc>0.6) {
+    ctx.font=`bold ${Math.floor(11*sc)}px Cinzel, serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const labels = [
+      [12, 8, 'Auvray', 'rgba(240,192,64,0.9)'],
+      [4, 6, 'Blois', 'rgba(200,80,80,0.7)'],
+      [21, 5, 'Bretagne', 'rgba(80,140,200,0.7)'],
+      [13, 16, 'Clairvaux', 'rgba(100,180,60,0.7)'],
+    ];
+    labels.forEach(([lx,ly,name,col]) => {
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.fillText(name, lx*TW*sc+ox+TW*sc/2+1, ly*TH*sc+oy+TH*sc/2+1);
+      ctx.fillStyle=col;
+      ctx.fillText(name, lx*TW*sc+ox+TW*sc/2, ly*TH*sc+oy+TH*sc/2);
+    });
+  }
+
   // Legend
-  ctx.fillStyle = 'rgba(42,26,14,0.85)';
-  ctx.fillRect(canvas.width - 130, canvas.height - 95, 125, 90);
-  ctx.strokeStyle = 'rgba(201,162,39,0.4)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(canvas.width - 130, canvas.height - 95, 125, 90);
-  const legend = [
-    ['#c9a227','Votre territoire'],['#8b1a1a','Ennemi'],['#1a4a8a','Rival'],['#2d5016','Allié']
-  ];
-  legend.forEach(([col, label], i) => {
-    ctx.fillStyle = col;
-    ctx.fillRect(canvas.width - 122, canvas.height - 85 + i*20, 12, 12);
-    ctx.fillStyle = '#e8d5a0';
-    ctx.font = '10px Crimson Text, Georgia, serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(label, canvas.width - 105, canvas.height - 75 + i*20);
+  const lx=canvas.width-140, ly=canvas.height-108;
+  ctx.fillStyle='rgba(10,6,2,0.88)';
+  roundRect(ctx, lx-4, ly-8, 138, 105, 2);
+  ctx.fill();
+  ctx.strokeStyle='rgba(184,146,30,0.4)';
+  ctx.lineWidth=1;
+  roundRect(ctx, lx-4, ly-8, 138, 105, 2);
+  ctx.stroke();
+
+  ctx.font='10px Cinzel, serif'; ctx.textAlign='left';
+  [['rgba(184,146,30,0.8)','Votre territoire'],['rgba(139,26,26,0.8)','Comte de Blois'],['rgba(26,74,110,0.8)','Duc de Bretagne'],['rgba(45,80,22,0.8)','Abbaye de Clairvaux']].forEach(([col,name],i)=>{
+    ctx.fillStyle=col;
+    ctx.fillRect(lx, ly+i*22, 14, 10);
+    ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=0.5;
+    ctx.strokeRect(lx, ly+i*22, 14, 10);
+    ctx.fillStyle='rgba(228,210,170,0.85)';
+    ctx.fillText(name, lx+20, ly+i*22+9);
   });
 }
 
-// ===================== UI UPDATES =====================
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h-r);
+  ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r); ctx.lineTo(x,y+r);
+  ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+}
+
+let mapAnimFrame;
+function animateMap() {
+  drawMap();
+  mapAnimFrame = requestAnimationFrame(animateMap);
+}
+
+function centerMap() {
+  const cont = document.getElementById('map-container');
+  G.map.scale = 1;
+  G.map.offsetX = cont.clientWidth/2 - 12*TW - TW/2;
+  G.map.offsetY = cont.clientHeight/2 - 8*TH - TH/2;
+}
+
+// ===================== UI =====================
 function updateTopBar() {
   const r = G.resources;
-  document.getElementById('res-gold').textContent = Math.floor(r.gold);
-  document.getElementById('res-food').textContent = Math.floor(r.food);
-  document.getElementById('res-wood').textContent = Math.floor(r.wood);
-  document.getElementById('res-stone').textContent = Math.floor(r.stone);
+  ['gold','food','wood','stone'].forEach(k => {
+    document.getElementById('res-'+k).textContent = Math.floor(r[k]);
+    const d = document.getElementById('delta-'+k);
+    if(d) { d.textContent=(G.deltas[k]>=0?'+':'')+G.deltas[k].toFixed(0); d.className='delta'+(G.deltas[k]<0?' neg':''); }
+  });
   document.getElementById('res-army').textContent = G.army.total;
   document.getElementById('res-happiness').textContent = Math.floor(G.happiness);
   document.getElementById('date-display').textContent = `${SEASONS[G.season]}, An ${G.year}`;
-
-  Object.entries(G.deltas).forEach(([res, val]) => {
-    const el = document.getElementById(`delta-${res}`);
-    if (!el) return;
-    el.textContent = (val >= 0 ? '+' : '') + val.toFixed(0);
-    el.className = 'delta' + (val < 0 ? ' neg' : '');
-  });
+  document.getElementById('season-badge').textContent = SEASONS[G.season].toUpperCase() + ' · AN ' + G.year;
 }
 
 function updateLeftPanel() {
   document.getElementById('dynasty-name').textContent = G.ruler.dynasty;
-  document.getElementById('ruler-name').textContent = `Seigneur ${G.ruler.name}`;
-  const traitsEl = document.getElementById('ruler-traits');
-  traitsEl.innerHTML = '';
-  G.ruler.traits.forEach(t => {
-    const el = document.createElement('span');
-    el.className = `trait ${t.type}`;
-    el.textContent = t.name;
-    traitsEl.appendChild(el);
+  document.getElementById('ruler-name').textContent = 'Seigneur ' + G.ruler.name;
+  const tr = document.getElementById('ruler-traits');
+  tr.innerHTML = G.ruler.traits.map(t=>`<span class="trait ${t.type}">${t.name}</span>`).join('');
+  const stats = {diplo:G.ruler.diplo, martial:G.ruler.martial, steward:G.ruler.steward, intrigue:G.ruler.intrigue, learning:G.ruler.learning};
+  Object.entries(stats).forEach(([k,v])=>{
+    const bar=document.getElementById('stat-'+k), val=document.getElementById('val-'+k);
+    if(bar) bar.style.width=(v/20*100)+'%';
+    if(val) val.textContent=v;
   });
-
-  // Stats
-  const stats = { diplo: G.ruler.diplo, martial: G.ruler.martial, steward: G.ruler.steward, intrigue: G.ruler.intrigue, learning: G.ruler.learning };
-  Object.entries(stats).forEach(([k, v]) => {
-    const bar = document.getElementById(`stat-${k}`);
-    const val = document.getElementById(`val-${k}`);
-    if (bar) bar.style.width = (v / 20 * 100) + '%';
-    if (val) val.textContent = v;
+  const bl = document.getElementById('build-list');
+  bl.innerHTML = '';
+  G.buildingTypes.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='build-btn';
+    const costStr=Object.entries(b.cost).map(([k,v])=>`${v}${k[0].toUpperCase()}`).join(' ');
+    const canAfford=Object.entries(b.cost).every(([k,v])=>G.resources[k]>=v);
+    btn.disabled=!canAfford||G.buildQueue;
+    btn.innerHTML=`<span>${b.icon} ${b.name} <small style="color:var(--stone-light)">(${b.built})</small></span><span class="cost">${costStr}</span>`;
+    btn.onclick=()=>buildBuilding(b.id);
+    bl.appendChild(btn);
   });
-
-  // Build list
-  const buildList = document.getElementById('build-list');
-  buildList.innerHTML = '';
-  G.buildingTypes.forEach(b => {
-    const btn = document.createElement('button');
-    btn.className = 'build-btn';
-    const costStr = Object.entries(b.cost).map(([k, v]) => `${v}${k[0].toUpperCase()}`).join(' ');
-    const canAfford = Object.entries(b.cost).every(([k, v]) => G.resources[k] >= v);
-    btn.disabled = !canAfford || G.buildQueue;
-    btn.innerHTML = `<span>${b.icon} ${b.name} <small style="color:var(--stone-light)">(${b.built})</small></span><span class="cost">${costStr} · ${b.effect}</span>`;
-    btn.onclick = () => buildBuilding(b.id);
-    buildList.appendChild(btn);
-  });
-
-  // Pop list
-  const popList = document.getElementById('pop-list');
-  popList.innerHTML = '';
-  const pops = [['Paysans', G.pop.peasants, '🌾'], ['Artisans', G.pop.craftsmen, '⚒'], ['Chevaliers', G.pop.knights, '⚔'], ['Clergé', G.pop.clergy, '✝']];
-  pops.forEach(([n, v, icon]) => {
-    popList.innerHTML += `<div class="pop-row"><span class="pop-name">${icon} ${n}</span><span>${v}</span></div>`;
-  });
+  // Progress
+  const pw=document.getElementById('build-progress-wrap');
+  if(G.buildQueue) {
+    pw.style.display='block';
+    document.getElementById('build-progress-label').textContent=`⚒ ${G.buildQueue.name}`;
+    document.getElementById('build-progress-bar').style.width=(G.buildQueue.progress/G.buildQueue.total*100)+'%';
+  } else { pw.style.display='none'; }
+  // Pop
+  const popList=document.getElementById('pop-list');
+  popList.innerHTML=[['Paysans',G.pop.peasants,'🌾'],['Artisans',G.pop.craftsmen,'⚒'],['Chevaliers',G.pop.knights,'⚔'],['Clergé',G.pop.clergy,'✝']]
+    .map(([n,v,i])=>`<div class="pop-row"><span class="pop-name">${i} ${n}</span><span>${v}</span></div>`).join('');
 }
 
 function updateRightPanel() {
-  // Relations
-  const relList = document.getElementById('relations-list');
-  relList.innerHTML = '';
-  G.neighbors.forEach(n => {
-    const color = n.relation >= 60 ? '#8fcc4f' : n.relation >= 30 ? '#f0c040' : '#ff7070';
-    relList.innerHTML += `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
-        <span style="font-size:12px;color:var(--parchment)">${n.name}</span>
-        <span style="font-size:11px;color:${color};font-family:'Cinzel',serif">${n.relation}</span>
-      </div>`;
-  });
+  const rl=document.getElementById('relations-list');
+  rl.innerHTML=G.neighbors.map(n=>{
+    const col=n.relation>=60?'#70c050':n.relation>=30?'#e8b830':'#ff6060';
+    const label=n.relation>=60?'Allié':n.relation>=30?'Neutre':'Hostile';
+    return `<div class="rel-row">
+      <span style="font-size:12px;flex:1">${n.name}</span>
+      <div class="rel-bar-wrap"><div class="rel-bar" style="width:${n.relation}%;background:${col}"></div></div>
+      <span style="font-size:11px;color:${col};font-family:'Cinzel',serif;width:44px;text-align:right">${label}</span>
+    </div>`;
+  }).join('');
 }
 
 function updateBottomTabs() {
-  // Economy
-  const bldCounts = {};
-  G.buildingTypes.forEach(b => bldCounts[b.id] = b.built);
-  document.getElementById('tab-economy-content').innerHTML =
-    `<div class="mini-stat">Revenus: <span>+${calcGoldIncome()}/tour</span></div>
-     <div class="mini-stat">Dépenses: <span>-${calcGoldExpense()}/tour</span></div>
-     <div class="mini-stat">Bâtiments: <span>${G.buildingTypes.reduce((s,b)=>s+b.built,0)}</span></div>`;
-
-  // Military
-  document.getElementById('tab-military-content').innerHTML =
-    `<div class="mini-stat">Infanterie: <span>${G.army.infantry}</span></div>
-     <div class="mini-stat">Cavalerie: <span>${G.army.cavalry}</span></div>
-     <div class="mini-stat">Total: <span>${G.army.total}</span></div>`;
-
-  // Diplomacy
-  document.getElementById('tab-diplomacy-content').innerHTML =
-    G.neighbors.map(n => `<div class="mini-stat">${n.name}: <span>${n.relation >= 60 ? 'Allié' : n.relation >= 30 ? 'Neutre' : 'Hostile'}</span></div>`).join('');
-
-  // Tech
-  document.getElementById('tab-tech-content').innerHTML =
-    G.techs.map(t => `<div class="mini-stat">${t.name}: <span style="color:${t.done?'#8fcc4f':'var(--parchment-dark)'}">${t.done ? '✓ Acquise' : t.cost + 'or'}</span>
-      ${!t.done ? `<button class="build-btn" style="display:inline;padding:1px 5px;font-size:10px;margin-left:4px" onclick="researchTech('${t.name}')">↗ Rechercher</button>` : ''}</div>`).join('');
+  const activeTab = document.querySelector('.dock-tab.active')?.id.replace('tab-','');
+  const bp = document.getElementById('bp-content');
+  if(!activeTab) return;
+  let html='';
+  if(activeTab==='economy') {
+    html=`<div class="bp-col"><div class="bp-col-title">Revenus</div>
+      <div class="mini-stat">Or: <span>+${calcGoldIncome()}/tour</span></div>
+      <div class="mini-stat">Dépenses: <span>-${calcGoldExpense()}/tour</span></div>
+      <div class="mini-stat">Bâtiments: <span>${G.buildingTypes.reduce((s,b)=>s+b.built,0)}</span></div>
+    </div>
+    <div class="bp-col"><div class="bp-col-title">Production</div>
+      <div class="mini-stat">Nourriture: <span>${calcFoodDelta()>0?'+':''}${calcFoodDelta()}/tour</span></div>
+      <div class="mini-stat">Bois: <span>+${G.buildingTypes.find(b=>b.id==='sawmill')?.built*6||2}/tour</span></div>
+      <div class="mini-stat">Pierre: <span>+${G.buildingTypes.find(b=>b.id==='mine')?.built*5||1}/tour</span></div>
+    </div>`;
+  } else if(activeTab==='military') {
+    html=`<div class="bp-col"><div class="bp-col-title">Forces</div>
+      <div class="mini-stat">Infanterie: <span>${G.army.infantry}</span></div>
+      <div class="mini-stat">Cavalerie: <span>${G.army.cavalry}</span></div>
+      <div class="mini-stat">Total: <span>${G.army.total}</span></div>
+    </div>`;
+  } else if(activeTab==='diplomacy') {
+    html=`<div class="bp-col"><div class="bp-col-title">Voisins</div>
+      ${G.neighbors.map(n=>`<div class="mini-stat">${n.name}: <span>${n.relation>=60?'Allié':n.relation>=30?'Neutre':'Hostile'} (${Math.floor(n.relation)})</span></div>`).join('')}
+    </div>`;
+  } else if(activeTab==='tech') {
+    html=`<div class="bp-col" style="min-width:500px"><div class="bp-col-title">Recherches</div>
+      ${G.techs.map(t=>`<div class="tech-row">
+        <span style="color:${t.done?'#9de060':'var(--parchment-dark)'};flex:1">${t.done?'✓ ':''} ${t.name}</span>
+        <span style="font-size:10px;color:var(--parchment-aged);margin:0 12px">${t.effect}</span>
+        ${!t.done?`<button class="tech-btn" onclick="researchTech('${t.name}')">${t.cost} 🪙 Rechercher</button>`:'<span style="color:#9de060;font-size:10px">Acquise</span>'}
+      </div>`).join('')}
+    </div>`;
+  }
+  bp.innerHTML=html;
 }
 
 function updateLog() {
-  const logEl = document.getElementById('log-list');
-  logEl.innerHTML = G.log.slice(-20).reverse().map(l =>
-    `<div class="log-entry"><span class="log-date">${l.date}</span> ${l.text}</div>`
-  ).join('');
+  document.getElementById('log-list').innerHTML=G.log.slice(-20).reverse()
+    .map(l=>`<div class="log-entry"><span class="log-date">${l.date}</span> ${l.text}</div>`).join('');
 }
 
 // ===================== ECONOMY =====================
-function calcGoldIncome() {
-  let inc = 10 + G.pop.craftsmen * 0.5;
-  const market = G.buildingTypes.find(b => b.id === 'market');
-  inc += (market?.built || 0) * 15;
-  const tech = G.techs.find(t => t.name === 'Commerce');
-  if (tech?.done) inc *= 1.25;
-  return Math.floor(inc * (1 + G.ruler.steward * 0.01));
+function calcGoldIncome(){
+  let inc=10+G.pop.craftsmen*0.5;
+  inc+=(G.buildingTypes.find(b=>b.id==='market')?.built||0)*15;
+  if(G.techs.find(t=>t.name==='Commerce')?.done) inc*=1.25;
+  return Math.floor(inc*(1+G.ruler.steward*0.01));
+}
+function calcGoldExpense(){ return Math.floor(5+G.army.total*0.3+G.pop.clergy*0.5); }
+function calcFoodDelta(){
+  let prod=5+(G.buildingTypes.find(b=>b.id==='farm')?.built||0)*8;
+  if(G.techs.find(t=>t.name==='Agriculture avancée')?.done) prod*=1.2;
+  const cons=(G.pop.peasants+G.pop.craftsmen+G.pop.knights+G.pop.clergy)*0.1;
+  return Math.floor(prod-cons);
 }
 
-function calcGoldExpense() {
-  return Math.floor(5 + G.army.total * 0.3 + G.pop.clergy * 0.5);
-}
-
-function calcFoodDelta() {
-  const farm = G.buildingTypes.find(b => b.id === 'farm');
-  let prod = 5 + (farm?.built || 0) * 8;
-  const tech = G.techs.find(t => t.name === 'Agriculture avancée');
-  if (tech?.done) prod *= 1.2;
-  const consume = (G.pop.peasants + G.pop.craftsmen + G.pop.knights + G.pop.clergy) * 0.1;
-  return Math.floor(prod - consume);
-}
-
-function tick() {
-  G.tick++;
-  G.day++;
-  if (G.day >= 90) {
-    G.day = 0;
-    G.season = (G.season + 1) % 4;
-    if (G.season === 0) G.year++;
-    onNewSeason();
-  }
-
-  const goldInc = calcGoldIncome();
-  const goldExp = calcGoldExpense();
-  const foodDelta = calcFoodDelta();
-  const woodInc = G.buildingTypes.find(b=>b.id==='sawmill')?.built * 6 || 2;
-  const stoneInc = G.buildingTypes.find(b=>b.id==='mine')?.built * 5 || 1;
-
-  const rate = 1/90;
-  G.resources.gold += (goldInc - goldExp) * rate;
-  G.resources.food += foodDelta * rate;
-  G.resources.wood += woodInc * rate;
-  G.resources.stone += stoneInc * rate;
-
-  G.deltas.gold = goldInc - goldExp;
-  G.deltas.food = foodDelta;
-  G.deltas.wood = woodInc;
-  G.deltas.stone = stoneInc;
-
-  // Clamp
-  Object.keys(G.resources).forEach(k => { if (G.resources[k] < 0) G.resources[k] = 0; });
-
-  // Happiness
-  const targetHappiness = 50
-    + (G.buildingTypes.find(b=>b.id==='church')?.built || 0) * 10
-    + (G.resources.food > 100 ? 10 : -10)
-    + (G.resources.gold > 100 ? 5 : -5);
-  G.happiness += (targetHappiness - G.happiness) * 0.002;
-  G.happiness = Math.max(0, Math.min(100, G.happiness));
-
-  // Random events every ~60 ticks
-  if (G.tick % 60 === 0 && Math.random() < 0.4) triggerRandomEvent();
-
-  // Population growth
-  if (G.tick % 180 === 0) {
-    if (G.happiness > 60 && G.resources.food > 50) {
-      G.pop.peasants += Math.floor(Math.random() * 3) + 1;
-      addLog('La population a augmenté.');
-    }
-  }
-
+// ===================== TICK =====================
+function tick(){
+  G.tick++; G.day++;
+  if(G.day>=90){ G.day=0; G.season=(G.season+1)%4; if(G.season===0) G.year++; onNewSeason(); }
+  const gi=calcGoldIncome(), ge=calcGoldExpense(), fd=calcFoodDelta();
+  const wi=G.buildingTypes.find(b=>b.id==='sawmill')?.built*6||2;
+  const si=G.buildingTypes.find(b=>b.id==='mine')?.built*5||1;
+  const r=1/90;
+  G.resources.gold+=(gi-ge)*r; G.resources.food+=fd*r;
+  G.resources.wood+=wi*r; G.resources.stone+=si*r;
+  G.deltas={gold:gi-ge,food:fd,wood:wi,stone:si};
+  Object.keys(G.resources).forEach(k=>{ if(G.resources[k]<0) G.resources[k]=0; });
+  const targetH=50+(G.buildingTypes.find(b=>b.id==='church')?.built||0)*10+(G.resources.food>100?10:-10)+(G.resources.gold>100?5:-5);
+  G.happiness+=(targetH-G.happiness)*0.002;
+  G.happiness=Math.max(0,Math.min(100,G.happiness));
+  if(G.tick%60===0&&Math.random()<0.4) triggerRandomEvent();
+  if(G.tick%180===0&&G.happiness>60&&G.resources.food>50){ G.pop.peasants+=Math.floor(Math.random()*3)+1; addLog('La population a augmenté.'); }
   updateTopBar();
-  if (G.tick % 5 === 0) {
-    updateLeftPanel();
-    updateRightPanel();
-    updateBottomTabs();
-    updateLog();
-  }
+  if(G.tick%5===0){ updateLeftPanel(); updateRightPanel(); updateBottomTabs(); updateLog(); }
 }
 
-// ===================== SEASONS =====================
-function onNewSeason() {
+function onNewSeason(){
   addLog(`${SEASONS[G.season]} — An ${G.year} commence.`);
-  if (G.season === 3) { // Winter
-    G.deltas.food -= 20;
-    if (G.resources.food < 50) {
-      showNotif('⚠ Pénurie alimentaire en hiver !');
-      G.happiness -= 10;
-    }
-  }
-  // Neighbor relations drift
-  G.neighbors.forEach(n => {
-    n.relation += (Math.random() - 0.5) * 4;
-    n.relation = Math.max(0, Math.min(100, n.relation));
-  });
-  drawMap();
+  if(G.season===3){ G.deltas.food-=20; if(G.resources.food<50){ showNotif('⚠ Pénurie alimentaire en hiver !'); G.happiness-=10; } }
+  G.neighbors.forEach(n=>{ n.relation+=( Math.random()-0.5)*4; n.relation=Math.max(0,Math.min(100,n.relation)); });
 }
 
 // ===================== BUILDING =====================
-function buildBuilding(id) {
-  const b = G.buildingTypes.find(b => b.id === id);
-  if (!b) return;
-  if (G.buildQueue) { showNotif('Une construction est déjà en cours !'); return; }
-  const canAfford = Object.entries(b.cost).every(([k, v]) => G.resources[k] >= v);
-  if (!canAfford) { showNotif('Ressources insuffisantes !'); return; }
-  Object.entries(b.cost).forEach(([k, v]) => G.resources[k] -= v);
-  G.buildQueue = { id, name: b.name, progress: 0, total: 30 + b.built * 10 };
+function buildBuilding(id){
+  const b=G.buildingTypes.find(b=>b.id===id);
+  if(!b||G.buildQueue){ showNotif('Une construction est déjà en cours !'); return; }
+  if(!Object.entries(b.cost).every(([k,v])=>G.resources[k]>=v)){ showNotif('Ressources insuffisantes !'); return; }
+  Object.entries(b.cost).forEach(([k,v])=>G.resources[k]-=v);
+  G.buildQueue={id,name:b.name,progress:0,total:30+b.built*10};
   addLog(`Construction de ${b.name} commencée.`);
-  const checkBuild = setInterval(() => {
-    if (!G.buildQueue) { clearInterval(checkBuild); return; }
-    G.buildQueue.progress += G.speed;
-    if (G.buildQueue.progress >= G.buildQueue.total) {
+  const iv=setInterval(()=>{
+    if(!G.buildQueue){clearInterval(iv);return;}
+    G.buildQueue.progress+=G.speed;
+    if(G.buildQueue.progress>=G.buildQueue.total){
       b.built++;
-      if (id === 'barracks') { G.army.infantry += 5; G.army.total = G.army.infantry + G.army.cavalry; }
+      if(id==='barracks'){G.army.infantry+=5;G.army.total=G.army.infantry+G.army.cavalry;}
       showNotif(`✓ ${b.name} construite !`);
       addLog(`${b.name} construite avec succès.`);
-      G.buildQueue = null;
-      clearInterval(checkBuild);
+      G.buildQueue=null; clearInterval(iv);
     }
-  }, 200);
+  },200);
 }
 
 // ===================== TECH =====================
-function researchTech(name) {
-  const tech = G.techs.find(t => t.name === name);
-  if (!tech || tech.done) return;
-  if (G.resources.gold < tech.cost) { showNotif('Or insuffisant !'); return; }
-  G.resources.gold -= tech.cost;
-  tech.done = true;
-  showNotif(`✓ ${tech.name} recherchée !`);
-  addLog(`Technologie "${tech.name}" acquise.`);
-  updateBottomTabs();
-  updateLeftPanel();
+function researchTech(name){
+  const t=G.techs.find(t=>t.name===name);
+  if(!t||t.done) return;
+  if(G.resources.gold<t.cost){showNotif('Or insuffisant !');return;}
+  G.resources.gold-=t.cost; t.done=true;
+  showNotif(`✓ ${t.name} acquise !`); addLog(`Technologie "${t.name}" acquise.`);
+  updateBottomTabs(); updateLeftPanel();
 }
 
 // ===================== EVENTS =====================
-const EVENTS = [
-  {
-    title: 'Disette dans les campagnes',
-    text: 'Une mauvaise récolte menace vos villages. Le peuple se tourne vers vous.',
-    choices: [
-      { text: 'Distribuer des réserves (-30 nourriture, +10 bonheur)', action: () => { G.resources.food -= 30; G.happiness += 10; addLog('Réserves distribuées.'); } },
-      { text: 'Ignorer la situation (-15 bonheur)', action: () => { G.happiness -= 15; addLog('Le peuple est mécontent.'); } },
-      { text: 'Lever des taxes exceptionnelles (+50 or, -20 bonheur)', action: () => { G.resources.gold += 50; G.happiness -= 20; addLog('Taxes levées.'); } },
-    ]
-  },
-  {
-    title: 'Ambassadeur du Comte de Blois',
-    text: 'Le Comte de Blois propose une alliance commerciale. Cela pourrait enrichir votre domaine.',
-    choices: [
-      { text: 'Accepter (+30 relation, +100 or)', action: () => { G.neighbors[0].relation = Math.min(100, G.neighbors[0].relation+30); G.resources.gold += 100; addLog('Alliance commerciale acceptée.'); } },
-      { text: 'Refuser poliment (-5 relation)', action: () => { G.neighbors[0].relation -= 5; addLog('Alliance refusée.'); } },
-      { text: 'Négocier (+15 relation, +50 or, -20 prestige)', action: () => { G.neighbors[0].relation += 15; G.resources.gold += 50; addLog('Accord négocié.'); } },
-    ]
-  },
-  {
-    title: 'Tournoi régional',
-    text: 'Un tournoi de chevalerie est organisé dans votre domaine. Une occasion de briller !',
-    choices: [
-      { text: 'Participer (-30 or, +20 prestige, +10 bonheur)', action: () => { G.resources.gold -= 30; G.ruler.prestige += 20; G.happiness += 10; addLog('Tournoi organisé avec succès.'); } },
-      { text: 'Annuler (-10 bonheur)', action: () => { G.happiness -= 10; addLog('Tournoi annulé.'); } },
-    ]
-  },
-  {
-    title: 'Révolte de serfs',
-    text: 'Des paysans mécontents refusent de travailler dans vos champs. La tension monte.',
-    choices: [
-      { text: 'Réprimer (-20 or, -5 bonheur à long terme)', action: () => { G.resources.gold -= 20; G.happiness -= 5; addLog('Révolte réprimée dans le sang.'); } },
-      { text: 'Négocier (+food prod, -10 or/an)', action: () => { G.resources.gold -= 10; addLog('Accord passé avec les serfs.'); } },
-      { text: 'Accorder des libertés (+15 bonheur, +5 relation Clergé)', action: () => { G.happiness += 15; G.neighbors[2].relation += 5; addLog('Libertés accordées.'); } },
-    ]
-  },
-  {
-    title: 'Découverte d\'une mine',
-    text: 'Vos mineurs ont découvert un gisement de fer dans les collines proches.',
-    choices: [
-      { text: 'Exploiter immédiatement (+50 fer, -40 bois)', action: () => { G.resources.iron += 50; G.resources.wood -= 40; addLog('Mine exploitée.'); } },
-      { text: 'Renforcer d\'abord les structures (-20 or, +80 fer)', action: () => { G.resources.gold -= 20; G.resources.iron += 80; addLog('Mine sécurisée et exploitée.'); } },
-    ]
-  },
+const EVENTS=[
+  {title:'Disette dans les campagnes',text:'Une mauvaise récolte menace vos villages. Le peuple se tourne vers vous.',choices:[
+    {text:'Distribuer des réserves (−30 nourriture, +10 bonheur)',action:()=>{G.resources.food-=30;G.happiness+=10;addLog('Réserves distribuées.');}},
+    {text:'Ignorer (−15 bonheur)',action:()=>{G.happiness-=15;addLog('Le peuple est mécontent.');}},
+    {text:'Lever des taxes (+50 or, −20 bonheur)',action:()=>{G.resources.gold+=50;G.happiness-=20;addLog('Taxes levées.');}},
+  ]},
+  {title:"Ambassadeur du Comte de Blois",text:'Le Comte de Blois propose une alliance commerciale.',choices:[
+    {text:'Accepter (+30 rel, +100 or)',action:()=>{G.neighbors[0].relation=Math.min(100,G.neighbors[0].relation+30);G.resources.gold+=100;addLog('Alliance acceptée.');}},
+    {text:'Refuser (−5 rel)',action:()=>{G.neighbors[0].relation-=5;addLog('Alliance refusée.');}},
+  ]},
+  {title:'Tournoi régional',text:'Un tournoi de chevalerie est organisé dans votre fief.',choices:[
+    {text:'Participer (−30 or, +20 prestige, +10 bonheur)',action:()=>{G.resources.gold-=30;G.ruler.prestige+=20;G.happiness+=10;addLog('Tournoi organisé.');}},
+    {text:'Annuler (−10 bonheur)',action:()=>{G.happiness-=10;addLog('Tournoi annulé.');}},
+  ]},
+  {title:'Révolte de serfs',text:'Des paysans mécontents refusent de travailler dans vos champs.',choices:[
+    {text:'Réprimer (−20 or)',action:()=>{G.resources.gold-=20;G.happiness-=5;addLog('Révolte réprimée.');}},
+    {text:'Accorder des libertés (+15 bonheur)',action:()=>{G.happiness+=15;G.neighbors[2].relation+=5;addLog('Libertés accordées.');}},
+  ]},
+  {title:"Découverte d'une mine",text:"Vos mineurs ont découvert un gisement de fer dans les collines.",choices:[
+    {text:'Exploiter (+50 fer, −40 bois)',action:()=>{G.resources.iron+=50;G.resources.wood-=40;addLog('Mine exploitée.');}},
+    {text:'Sécuriser (−20 or, +80 fer)',action:()=>{G.resources.gold-=20;G.resources.iron+=80;addLog('Mine sécurisée.');}},
+  ]},
 ];
-
-function triggerRandomEvent() {
-  if (G.pendingEvents.length > 0) return;
-  const evt = EVENTS[Math.floor(Math.random() * EVENTS.length)];
-  showEvent(evt);
+function triggerRandomEvent(){
+  if(G.pendingEvents.length>0) return;
+  showEvent(EVENTS[Math.floor(Math.random()*EVENTS.length)]);
 }
-
-function showEvent(evt) {
-  const list = document.getElementById('events-list');
-  const card = document.createElement('div');
-  card.className = 'event-card';
-  card.innerHTML = `
-    <div class="event-title">📜 ${evt.title}</div>
+function showEvent(evt){
+  // Auto-open right panel
+  const rp=document.getElementById('right-panel');
+  if(rp.classList.contains('hidden')) togglePanel('right');
+  const list=document.getElementById('events-list');
+  list.innerHTML='';
+  const card=document.createElement('div');
+  card.className='event-card';
+  card.innerHTML=`<div class="event-title">📜 ${evt.title}</div>
     <div class="event-text">${evt.text}</div>
-    <div class="event-choices">
-      ${evt.choices.map((c, i) => `<button class="choice-btn" onclick="resolveEvent(${i}, this)">${c.text}</button>`).join('')}
-    </div>`;
-  // Store actions
-  card._actions = evt.choices.map(c => c.action);
+    <div class="event-choices">${evt.choices.map((c,i)=>`<button class="choice-btn" onclick="resolveEvent(${i},this)">${c.text}</button>`).join('')}</div>`;
+  card._actions=evt.choices.map(c=>c.action);
   list.prepend(card);
   G.pendingEvents.push(card);
 }
-
-function resolveEvent(choiceIdx, btn) {
-  const card = btn.closest('.event-card');
-  card._actions[choiceIdx]();
-  card.style.opacity = '0';
-  card.style.transform = 'translateX(10px)';
-  card.style.transition = 'all 0.3s';
-  setTimeout(() => card.remove(), 300);
-  G.pendingEvents = G.pendingEvents.filter(e => e !== card);
-  updateTopBar();
-  updateLeftPanel();
+function resolveEvent(i,btn){
+  const card=btn.closest('.event-card');
+  card._actions[i](); card.style.opacity='0'; card.style.transform='translateX(10px)'; card.style.transition='all 0.3s';
+  setTimeout(()=>card.remove(),300);
+  G.pendingEvents=G.pendingEvents.filter(e=>e!==card);
+  updateTopBar(); updateLeftPanel();
 }
 
-// ===================== LOGGING =====================
-function addLog(text) {
-  G.log.push({ date: `${SEASONS[G.season]} ${G.year}`, text });
-  updateLog();
+// ===================== LOGGING / NOTIFS =====================
+function addLog(text){ G.log.push({date:`${SEASONS[G.season]} ${G.year}`,text}); updateLog(); }
+function showNotif(msg){
+  const el=document.createElement('div'); el.className='notif'; el.textContent=msg;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),2900);
 }
 
-// ===================== NOTIFICATIONS =====================
-function showNotif(msg) {
-  const el = document.createElement('div');
-  el.className = 'notif';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2600);
+// ===================== SPEED =====================
+function setSpeed(s){
+  G.speed=s; clearInterval(G.tickInterval);
+  ['pause','s1','s2','s3'].forEach((id,i)=>document.getElementById('btn-'+id).classList.toggle('active',i===s));
+  if(s>0){ const d=[null,200,80,20]; G.tickInterval=setInterval(tick,d[s]); }
 }
 
-// ===================== SPEED CONTROL =====================
-function setSpeed(s) {
-  G.speed = s;
-  clearInterval(G.tickInterval);
-  ['pause','s1','s2','s3'].forEach((id,i) => {
-    document.getElementById('btn-'+id).classList.toggle('active', i === s);
-  });
-  if (s > 0) {
-    const delays = [null, 200, 80, 20];
-    G.tickInterval = setInterval(tick, delays[s]);
-  }
+// ===================== TAB / DOCK =====================
+let activeTab=null;
+function selectTab(tab){
+  document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const bp=document.getElementById('bottom-panel');
+  if(activeTab===tab){ bp.classList.toggle('open'); if(!bp.classList.contains('open')) activeTab=null; return; }
+  bp.classList.add('open');
+  activeTab=tab;
+  updateBottomTabs();
 }
 
 // ===================== MAP INTERACTION =====================
-function initMapInteraction() {
-  const canvas = document.getElementById('map-canvas');
-  const container = document.getElementById('map-container');
-
-  canvas.addEventListener('mousedown', e => {
-    G.map.dragging = true;
-    G.map.lastX = e.clientX;
-    G.map.lastY = e.clientY;
-  });
-  canvas.addEventListener('mousemove', e => {
-    if (G.map.dragging) {
-      G.map.offsetX += e.clientX - G.map.lastX;
-      G.map.offsetY += e.clientY - G.map.lastY;
-      G.map.lastX = e.clientX;
-      G.map.lastY = e.clientY;
-      drawMap();
+function initMapInteraction(){
+  const canvas=document.getElementById('map-canvas');
+  canvas.addEventListener('mousedown',e=>{ G.map.dragging=true; G.map.lastX=e.clientX; G.map.lastY=e.clientY; G.map.dragMoved=false; });
+  canvas.addEventListener('mousemove',e=>{
+    if(G.map.dragging){
+      const dx=e.clientX-G.map.lastX, dy=e.clientY-G.map.lastY;
+      if(Math.abs(dx)>2||Math.abs(dy)>2) G.map.dragMoved=true;
+      G.map.offsetX+=dx; G.map.offsetY+=dy;
+      G.map.lastX=e.clientX; G.map.lastY=e.clientY;
     }
     // Tooltip
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const tx = Math.floor((mx - G.map.offsetX) / (TILE_W * G.map.scale));
-    const ty = Math.floor((my - G.map.offsetY) / (TILE_H * G.map.scale));
-    const tile = G.tiles.find(t => t.x === tx && t.y === ty);
-    const tt = document.getElementById('tooltip');
-    if (tile) {
-      tt.style.display = 'block';
-      tt.style.left = (e.clientX - rect.left + 12) + 'px';
-      tt.style.top = (e.clientY - rect.top + 12) + 'px';
-      const ownerName = { player: 'Votre territoire', enemy1: 'Comte de Blois', enemy2: 'Duc de Bretagne', ally1: 'Abbaye de Clairvaux' };
-      document.getElementById('tt-title').textContent = tile.special ? (TILE_ICONS[tile.special] + ' ' + (tile.special.charAt(0).toUpperCase() + tile.special.slice(1))) : tile.type.charAt(0).toUpperCase() + tile.type.slice(1);
-      document.getElementById('tt-body').innerHTML = `Propriétaire: ${ownerName[tile.owner] || 'Indépendant'}<br>Terrain: ${tile.type}`;
-    } else {
-      tt.style.display = 'none';
-    }
+    const rect=canvas.getBoundingClientRect();
+    const tx=Math.floor((e.clientX-rect.left-G.map.offsetX)/(TW*G.map.scale));
+    const ty=Math.floor((e.clientY-rect.top-G.map.offsetY)/(TH*G.map.scale));
+    const tile=G.tiles.find(t=>t.x===tx&&t.y===ty);
+    const tt=document.getElementById('tooltip');
+    if(tile){
+      tt.style.display='block';
+      tt.style.left=(e.clientX-rect.left+14)+'px';
+      tt.style.top=(e.clientY-rect.top+14)+'px';
+      const onames={player:'Votre territoire',enemy1:'Comte de Blois',enemy2:'Duc de Bretagne',ally1:'Abbaye de Clairvaux'};
+      const tnames={plains:'Plaines',forest:'Forêt',mountain:'Montagne',hills:'Collines',water:'Eau',capital:'Capitale'};
+      const icons={capital:'🏰',village:'🏠',ruin:'🗿',monastery:'⛪'};
+      document.getElementById('tt-title').textContent=(icons[tile.special]||'')+' '+(tnames[tile.type]||tile.type);
+      document.getElementById('tt-body').innerHTML=`<div>${onames[tile.owner]||'Territoire indépendant'}</div><div style="color:var(--parchment-aged)">${tile.x},${tile.y}</div>`;
+    } else { tt.style.display='none'; }
   });
-  canvas.addEventListener('mouseup', e => {
-    if (!G.map.dragging || (Math.abs(e.clientX - G.map.lastX) < 3 && Math.abs(e.clientY - G.map.lastY) < 3)) {
-      const rect = canvas.getBoundingClientRect();
-      const tx = Math.floor((e.clientX - rect.left - G.map.offsetX) / (TILE_W * G.map.scale));
-      const ty = Math.floor((e.clientY - rect.top - G.map.offsetY) / (TILE_H * G.map.scale));
-      const tile = G.tiles.find(t => t.x === tx && t.y === ty);
-      if (tile) { G.selectedTile = tile; drawMap(); }
+  canvas.addEventListener('mouseup',e=>{
+    if(!G.map.dragMoved){
+      const rect=canvas.getBoundingClientRect();
+      const tx=Math.floor((e.clientX-rect.left-G.map.offsetX)/(TW*G.map.scale));
+      const ty=Math.floor((e.clientY-rect.top-G.map.offsetY)/(TH*G.map.scale));
+      const tile=G.tiles.find(t=>t.x===tx&&t.y===ty);
+      if(tile){ G.selectedTile=tile; }
     }
-    G.map.dragging = false;
+    G.map.dragging=false;
   });
-  canvas.addEventListener('wheel', e => {
+  canvas.addEventListener('mouseleave',()=>{ G.map.dragging=false; document.getElementById('tooltip').style.display='none'; });
+  canvas.addEventListener('wheel',e=>{
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    G.map.scale = Math.max(0.4, Math.min(2.5, G.map.scale * delta));
-    drawMap();
-  });
-  window.addEventListener('resize', () => { drawMap(); });
-}
-
-function selectTab(tab) {
-  document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const oldScale=G.map.scale;
+    G.map.scale=Math.max(0.35,Math.min(3,G.map.scale*(e.deltaY>0?0.9:1.1)));
+    // Zoom toward mouse
+    G.map.offsetX=mx-(mx-G.map.offsetX)*G.map.scale/oldScale;
+    G.map.offsetY=my-(my-G.map.offsetY)*G.map.scale/oldScale;
+  },{passive:false});
+  window.addEventListener('resize',()=>{ const c=document.getElementById('map-container'); canvas.width=c.clientWidth; canvas.height=c.clientHeight; });
 }
 
 // ===================== INIT =====================
-function init() {
+function init(){
   generateMap();
-  // Center map on capital
-  const container = document.getElementById('map-container');
-  G.map.offsetX = container.clientWidth / 2 - 10 * TILE_W - TILE_W/2;
-  G.map.offsetY = container.clientHeight / 2 - 7 * TILE_H - TILE_H/2;
-  drawMap();
+  centerMap();
+  animateMap(); // animated map loop
   initMapInteraction();
-  updateTopBar();
-  updateLeftPanel();
-  updateRightPanel();
-  updateBottomTabs();
+  updateTopBar(); updateLeftPanel(); updateRightPanel(); updateBottomTabs(); updateLog();
   addLog('Votre règne commence. Que Dieu vous guide.');
-  setTimeout(() => triggerRandomEvent(), 3000);
+  setTimeout(()=>triggerRandomEvent(),3000);
   setSpeed(1);
+  // Start with panels visible
+  // Default: left open, right open
 }
-
-window.addEventListener('load', init);
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
+
