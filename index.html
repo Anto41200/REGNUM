@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Regnum — v0.15</title>
+<title>Regnum — v0.16.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -389,7 +389,7 @@ body {
   position:absolute;
   inset:0;
   overflow:hidden;
-  background: radial-gradient(ellipse at 50% 40%, #1a2a10 0%, #0d1808 40%, #060c04 100%);
+  background: radial-gradient(ellipse at 50% 40%, #223818 0%, #152010 40%, #0a1208 100%);
   cursor:grab;
 }
 #map-container:active { cursor:grabbing; }
@@ -1207,7 +1207,10 @@ function initMapInteraction(){
     G.map.offsetX=mx-(mx-G.map.offsetX)*G.map.scale/oldScale;
     G.map.offsetY=my-(my-G.map.offsetY)*G.map.scale/oldScale;
   },{passive:false});
-  window.addEventListener('resize',()=>{ const c=document.getElementById('map-container'); canvas.width=c.clientWidth; canvas.height=c.clientHeight; });
+  window.addEventListener('resize',()=>{ 
+    // Laisser drawMap gérer le resize proprement
+    if (typeof voronoiData !== 'undefined') voronoiData = null;
+  });
 }
 
 // ===================== INIT =====================
