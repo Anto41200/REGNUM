@@ -575,6 +575,30 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
 
     const elev = getElev(tile.x, tile.y);
     const hs = hillshade(tile.x, tile.y);
+
+    // — EAU : rendu spécialisé, pas de gradient terrain
+    if (tile.type === 'water') {
+      const depth = clamp(elev * 3, 0, 1);
+      const deepBlue = lerpColor([18, 55, 138], [32, 88, 188], depth);
+      const shallowBlue = lerpColor([42, 128, 210], [65, 158, 235], depth);
+      const wgrad = ctx.createLinearGradient(px, py, px + tw * 0.4, py + th);
+      wgrad.addColorStop(0, rgb(shallowBlue));
+      wgrad.addColorStop(1, rgb(deepBlue));
+      ctx.fillStyle = wgrad;
+      ctx.fillRect(px, py, tw, th);
+      drawWaterWaves(ctx, px, py, tw, th, sc, tile);
+      if (sc > 0.7) {
+        const specGrad = ctx.createLinearGradient(px, py, px + tw, py + th * 0.5);
+        specGrad.addColorStop(0, 'rgba(180,220,255,0.10)');
+        specGrad.addColorStop(0.4, 'rgba(140,200,255,0.04)');
+        specGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = specGrad;
+        ctx.fillRect(px, py, tw, th);
+      }
+      drawFogOfWar(ctx, tile, px, py, tw, th, sc);
+      return; // ← stop ici pour les tiles eau
+    }
+
     let col = terrainColor(tile, elev, season);
 
     // Hillshade plus marqué (relief plus visible)
@@ -607,38 +631,16 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
         return n && n.type === 'water';
       });
       if (waterDir) {
-        // Bande sableuse côtière plus belle
-        const gx = waterDir.dx > 0 ? px + tw * 0.3 : waterDir.dx < 0 ? px : px;
-        const gy = waterDir.dy > 0 ? py + th * 0.3 : waterDir.dy < 0 ? py : py;
-        const gx2 = waterDir.dx > 0 ? px + tw : waterDir.dx < 0 ? px + tw * 0.7 : px + tw;
-        const gy2 = waterDir.dy > 0 ? py + th : waterDir.dy < 0 ? py + th * 0.7 : py + th;
+        // Bande sableuse côtière — gradient depuis le bord opposé vers l'eau
+        const gx  = px;
+        const gy  = py;
+        const gx2 = px + tw + (waterDir.dx !== 0 ? 0 : 1);
+        const gy2 = py + th + (waterDir.dy !== 0 ? 0 : 1);
         const cgrad = ctx.createLinearGradient(gx, gy, gx2, gy2);
         cgrad.addColorStop(0, 'rgba(222,196,132,0.0)');
         cgrad.addColorStop(0.55, 'rgba(222,196,132,0.0)');
-        cgrad.addColorStop(1, 'rgba(228,205,148,0.72)');
+        cgrad.addColorStop(1, 'rgba(228,205,148,0.68)');
         ctx.fillStyle = cgrad;
-        ctx.fillRect(px, py, tw, th);
-      }
-    }
-
-    // Water — rendu mer plus riche avec couleur par profondeur
-    if (tile.type === 'water') {
-      const depth = clamp(elev * 3, 0, 1);
-      const deepBlue = lerpColor([18, 55, 138], [32, 88, 188], depth);
-      const shallowBlue = lerpColor([42, 128, 210], [65, 158, 235], depth);
-      const wgrad = ctx.createLinearGradient(px, py, px + tw * 0.4, py + th);
-      wgrad.addColorStop(0, rgb(shallowBlue));
-      wgrad.addColorStop(1, rgb(deepBlue));
-      ctx.fillStyle = wgrad;
-      ctx.fillRect(px, py, tw, th);
-      drawWaterWaves(ctx, px, py, tw, th, sc, tile);
-      // Reflet spéculaire
-      if (sc > 0.7) {
-        const specGrad = ctx.createLinearGradient(px, py, px + tw, py + th * 0.5);
-        specGrad.addColorStop(0, 'rgba(180,220,255,0.10)');
-        specGrad.addColorStop(0.4, 'rgba(140,200,255,0.04)');
-        specGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = specGrad;
         ctx.fillRect(px, py, tw, th);
       }
     }
