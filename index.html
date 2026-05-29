@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Regnum — v0.16.2</title>
+<title>Regnum — v0.16.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1208,8 +1208,8 @@ function initMapInteraction(){
     G.map.offsetY=my-(my-G.map.offsetY)*G.map.scale/oldScale;
   },{passive:false});
   window.addEventListener('resize',()=>{ 
-    // Laisser drawMap gérer le resize proprement
-    if (typeof voronoiData !== 'undefined') voronoiData = null;
+    // Laisser drawMap gérer le resize — le voronoi est stable (taille fixe MAP_W*VOI_RES)
+    parchmentCanvas = null;
   });
 }
 
@@ -1230,3 +1230,4 @@ window.addEventListener('load',init);
 </script>
 </body>
 </html>
+
