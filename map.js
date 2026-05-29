@@ -157,7 +157,7 @@ function terrainColor(tile, elev, season) {
   let c = lerpColor(pal[0], pal[1], n);
   const altTint = clamp(elev - 0.45, 0, 1);
   c = lerpColor(c, [195, 205, 215], altTint * 0.32);
-  const br = SEASON_BRIGHT[season];
+  const br = SEASON_BRIGHT[season] || 1;
   c = c.map(v => clamp(Math.floor(v * br), 0, 255));
   if (season === 3 && tile.type !== 'water') {
     const grey = (c[0] + c[1] + c[2]) / 3;
@@ -166,7 +166,8 @@ function terrainColor(tile, elev, season) {
   if (elev > SEASON_SNOW_THRESH[season] && tile.type === 'mountain') {
     c = lerpColor(c, [242, 245, 252], clamp((elev - SEASON_SNOW_THRESH[season]) * 3, 0, 1));
   }
-  return c;
+  // Garde anti-NaN
+  return c.map(v => (isNaN(v) ? 128 : clamp(v, 0, 255)));
 }
 
 /* ─────────────────────────────────────────────
@@ -611,12 +612,17 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
     col = col.map(v => clamp(v + (nv - 0.5) * 22 + (nv2 - 0.5) * 8, 0, 255));
 
     // — BASE TILE avec gradient de relief (lumière vient du NW)
-    const tgrad = ctx.createLinearGradient(px, py, px + tw * 0.7, py + th);
+    const tgrad = ctx.createLinearGradient(px, py, px + tw * 0.7 + 0.01, py + th + 0.01);
     const lightCol = col.map(v => clamp(v + 22, 0, 255));
     const shadowCol2 = col.map(v => clamp(v - 28, 0, 255));
-    tgrad.addColorStop(0, rgb(lightCol));
-    tgrad.addColorStop(0.45, rgb(col));
-    tgrad.addColorStop(1, rgb(shadowCol2));
+    // Garde ultime : si NaN subsiste, utiliser gris neutre
+    const safeRgb = arr => {
+      const clean = arr.map(v => (isNaN(v) ? 128 : clamp(Math.round(v), 0, 255)));
+      return `rgb(${clean[0]},${clean[1]},${clean[2]})`;
+    };
+    tgrad.addColorStop(0, safeRgb(lightCol));
+    tgrad.addColorStop(0.45, safeRgb(col));
+    tgrad.addColorStop(1, safeRgb(shadowCol2));
     ctx.fillStyle = tgrad;
     ctx.fillRect(px, py, tw, th);
 
