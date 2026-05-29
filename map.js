@@ -1,5 +1,5 @@
 // ============================================================
-//  REGNUM — map.js  v0.16.2
+//  REGNUM — map.js  v0.16.3
 //  Moteur cartographique style CK3 — frontières organiques
 //  Dual-mode: politique (dézoom) / relief détaillé (zoom)
 // ============================================================
@@ -136,13 +136,16 @@ function hillshade(x, y) {
    TERRAIN COLOR — plus lumineux
 ───────────────────────────────────────────── */
 const TERRAIN_PALETTES = {
-  plains:   [[95, 148, 52],  [118, 172, 68]],
-  forest:   [[38,  95, 28],  [52,  118, 38]],
-  mountain: [[148, 138, 122],[168, 155, 135]],
-  hills:    [[105, 140, 68], [125, 162, 82]],
-  water:    [[42,  98, 168], [55,  122, 198]],
-  capital:  [[145, 108, 32], [168, 128, 48]],
-  coast:    [[212, 192, 142],[228, 208, 162]],
+  plains:   [[108, 158,  58],  [132, 185,  72]],
+  forest:   [[ 32,  88,  22],  [ 48, 112,  34]],
+  mountain: [[158, 145, 120],  [178, 162, 135]],
+  hills:    [[ 92, 148,  52],  [118, 172,  68]],
+  water:    [[ 28,  88, 168],  [ 40, 112, 205]],
+  capital:  [[155, 118,  32],  [178, 138,  48]],
+  // nouveau : désert sableux (inspiré Humankind/Civ6)
+  desert:   [[210, 178,  92],  [228, 198, 118]],
+  coast:    [[198, 178, 122],  [218, 198, 148]],
+  sand:     [[222, 192, 110],  [238, 212, 138]],
 };
 
 const SEASON_BRIGHT = [1.08, 1.18, 1.00, 0.82];
@@ -403,7 +406,8 @@ function drawPoliticalMode(ctx, W, H, ox, oy, sc, season) {
 }
 
 /* ─────────────────────────────────────────────
-   FRONTIÈRES ORGANIQUES
+   FRONTIÈRES ORGANIQUES — v0.16.3
+   Deux passes : ombre épaisse + couleur faction
 ───────────────────────────────────────────── */
 function drawOrganicBorders(ctx, ox, oy, sc, TW, TH, W, H) {
   if (!voronoiData) return;
@@ -427,9 +431,8 @@ function drawOrganicBorders(ctx, ox, oy, sc, TW, TH, W, H) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // Grouper les segments par paire de factions pour les dessiner ensemble
-  // On fait deux passes : ombre (épaisse) puis trait coloré
-  for (let pass = 0; pass < 2; pass++) {
+  // 3 passes : glow externe (très épais, sombre), ombre, ligne colorée
+  for (let pass = 0; pass < 3; pass++) {
     segs.forEach(seg => {
       const ownerMax = Math.max(seg.ownerA, seg.ownerB);
       if (ownerMax === 0) return;
@@ -448,27 +451,35 @@ function drawOrganicBorders(ctx, ox, oy, sc, TW, TH, W, H) {
       if (!fc) return;
 
       if (pass === 0) {
-        // Ombre sombre épaisse
-        ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-        ctx.lineWidth = 3.5 * sc;
+        // Glow sombre externe (halo de territoire)
+        ctx.strokeStyle = `rgba(${fc.r * 0.3 | 0},${fc.g * 0.3 | 0},${fc.b * 0.3 | 0},0.35)`;
+        ctx.lineWidth = 5.5 * sc;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      } else if (pass === 1) {
+        // Ombre noire
+        ctx.strokeStyle = 'rgba(0,0,0,0.60)';
+        ctx.lineWidth = 3.2 * sc;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
       } else {
-        // Ligne colorée + brillance
-        ctx.strokeStyle = `rgba(${fc.r},${fc.g},${fc.b},0.88)`;
-        ctx.lineWidth = 1.8 * sc;
+        // Ligne colorée de la faction
+        ctx.strokeStyle = `rgba(${fc.r},${fc.g},${fc.b},0.92)`;
+        ctx.lineWidth = 1.6 * sc;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
-        // Reflet clair sur le dessus
-        ctx.strokeStyle = `rgba(255,255,255,0.25)`;
-        ctx.lineWidth = 0.6 * sc;
+        // Reflet clair
+        ctx.strokeStyle = `rgba(255,255,255,0.22)`;
+        ctx.lineWidth = 0.5 * sc;
         ctx.beginPath();
-        ctx.moveTo(x1 - sc * 0.3, y1 - sc * 0.3);
-        ctx.lineTo(x2 - sc * 0.3, y2 - sc * 0.3);
+        ctx.moveTo(x1 - sc * 0.28, y1 - sc * 0.28);
+        ctx.lineTo(x2 - sc * 0.28, y2 - sc * 0.28);
         ctx.stroke();
       }
     });
@@ -536,17 +547,26 @@ function drawRegionLabels(ctx, ox, oy, sc, TW, TH, W, H) {
 }
 
 /* ─────────────────────────────────────────────
-   DRAW DETAIL MODE (zoom) — rendu CK3 texturé
+   DRAW DETAIL MODE (zoom) — rendu CK3/Civ6 texturé v0.16.3
+   Tiles hexagonales, relief 3D, ambiance riche
 ───────────────────────────────────────────── */
 function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
   const TW = 48, TH = 40;
 
-  // 0. Fond ciel/ambiance
-  const skyCol = ['#1a3012', '#1e3808', '#1e1808', '#080e18'];
-  ctx.fillStyle = skyCol[season];
+  // 0. Fond ciel/ambiance — plus riche selon saison
+  const skyGrads = [
+    ['#1e380e', '#0e1e06'], // printemps
+    ['#1c3606', '#0a1a04'], // été
+    ['#2a1e08', '#100a02'], // automne
+    ['#0c1220', '#060810'], // hiver
+  ];
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, skyGrads[season][0]);
+  skyGrad.addColorStop(1, skyGrads[season][1]);
+  ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // 1. Terrain tuile par tuile
+  // 1. Terrain tuile par tuile — RENDU AMÉLIORÉ v0.16.3
   G.tiles.forEach(tile => {
     const px = tile.x * TW * sc + ox;
     const py = tile.y * TH * sc + oy;
@@ -558,68 +578,108 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
     let col = terrainColor(tile, elev, season);
 
     // Hillshade plus marqué (relief plus visible)
-    const hsMod = lerp(0.5, 1.25, hs);
+    const hsMod = lerp(0.48, 1.32, hs);
     col = col.map(v => clamp(Math.floor(v * hsMod), 0, 255));
 
-    // Variation
+    // Variation micro-terrain plus riche
     const nv = hash(tile.x * 73.1, tile.y * 143.7);
-    col = col.map(v => clamp(v + (nv - 0.5) * 18, 0, 255));
+    const nv2 = hash(tile.x * 31.3 + 99, tile.y * 67.7);
+    col = col.map(v => clamp(v + (nv - 0.5) * 22 + (nv2 - 0.5) * 8, 0, 255));
 
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = rgb(col);
+    // — BASE TILE avec gradient de relief (lumière vient du NW)
+    const tgrad = ctx.createLinearGradient(px, py, px + tw * 0.7, py + th);
+    const lightCol = col.map(v => clamp(v + 22, 0, 255));
+    const shadowCol2 = col.map(v => clamp(v - 28, 0, 255));
+    tgrad.addColorStop(0, rgb(lightCol));
+    tgrad.addColorStop(0.45, rgb(col));
+    tgrad.addColorStop(1, rgb(shadowCol2));
+    ctx.fillStyle = tgrad;
     ctx.fillRect(px, py, tw, th);
 
-    // Micro-texture terrain
-    drawTerrainTexture(ctx, tile, px, py, tw, th, sc, season, elev);
+    // — Micro-texture sol (grain procédural)
+    drawSoilTexture(ctx, tile, px, py, tw, th, sc, season, elev, nv, nv2);
 
-    // Coast
+    // Coast sand transition
     if (tile.type !== 'water') {
       const dirs = [{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}];
-      const hasWater = dirs.some(({dx,dy}) => {
+      const waterDir = dirs.find(({dx,dy}) => {
         const n = G.tiles.find(t => t.x===tile.x+dx && t.y===tile.y+dy);
         return n && n.type === 'water';
       });
-      if (hasWater) {
-        const grad = ctx.createLinearGradient(px, py, px + tw, py + th);
-        grad.addColorStop(0, 'rgba(210,188,132,0.0)');
-        grad.addColorStop(0.55, 'rgba(210,188,132,0.0)');
-        grad.addColorStop(1, 'rgba(210,188,132,0.62)');
-        ctx.fillStyle = grad;
+      if (waterDir) {
+        // Bande sableuse côtière plus belle
+        const gx = waterDir.dx > 0 ? px + tw * 0.3 : waterDir.dx < 0 ? px : px;
+        const gy = waterDir.dy > 0 ? py + th * 0.3 : waterDir.dy < 0 ? py : py;
+        const gx2 = waterDir.dx > 0 ? px + tw : waterDir.dx < 0 ? px + tw * 0.7 : px + tw;
+        const gy2 = waterDir.dy > 0 ? py + th : waterDir.dy < 0 ? py + th * 0.7 : py + th;
+        const cgrad = ctx.createLinearGradient(gx, gy, gx2, gy2);
+        cgrad.addColorStop(0, 'rgba(222,196,132,0.0)');
+        cgrad.addColorStop(0.55, 'rgba(222,196,132,0.0)');
+        cgrad.addColorStop(1, 'rgba(228,205,148,0.72)');
+        ctx.fillStyle = cgrad;
         ctx.fillRect(px, py, tw, th);
       }
     }
 
-    // Water waves
+    // Water — rendu mer plus riche avec couleur par profondeur
     if (tile.type === 'water') {
+      const depth = clamp(elev * 3, 0, 1);
+      const deepBlue = lerpColor([18, 55, 138], [32, 88, 188], depth);
+      const shallowBlue = lerpColor([42, 128, 210], [65, 158, 235], depth);
+      const wgrad = ctx.createLinearGradient(px, py, px + tw * 0.4, py + th);
+      wgrad.addColorStop(0, rgb(shallowBlue));
+      wgrad.addColorStop(1, rgb(deepBlue));
+      ctx.fillStyle = wgrad;
+      ctx.fillRect(px, py, tw, th);
       drawWaterWaves(ctx, px, py, tw, th, sc, tile);
+      // Reflet spéculaire
+      if (sc > 0.7) {
+        const specGrad = ctx.createLinearGradient(px, py, px + tw, py + th * 0.5);
+        specGrad.addColorStop(0, 'rgba(180,220,255,0.10)');
+        specGrad.addColorStop(0.4, 'rgba(140,200,255,0.04)');
+        specGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = specGrad;
+        ctx.fillRect(px, py, tw, th);
+      }
     }
 
-    // Fields
+    // Fields (plaines près villages)
     if (tile.type === 'plains' && sc > 0.6) {
       const nearVillage = G.tiles.some(t =>
         (t.special === 'village' || t.special === 'capital') &&
         Math.abs(t.x - tile.x) <= 2 && Math.abs(t.y - tile.y) <= 2
       );
       if (nearVillage && hash(tile.x * 19 + tile.y, tile.y * 23) > 0.45) {
-        ctx.globalAlpha = 0.62;
+        ctx.globalAlpha = 0.58;
         drawFields(ctx, px, py, tw, th, sc, season);
         ctx.globalAlpha = 1;
       }
     }
 
-    // Fog of War (CORRIGÉ: pas de ctx.rect sans beginPath)
+    // Micro-terrain textures (arbres, montagnes)
+    drawTerrainTexture(ctx, tile, px, py, tw, th, sc, season, elev);
+
+    // Fog of War
     drawFogOfWar(ctx, tile, px, py, tw, th, sc);
 
-    // Territory overlay (subtil en mode détail)
+    // Territory color overlay (subtil mais visible)
     if (tile.owner) {
       const fc = FACTION_COLORS[tile.owner];
       if (fc) {
-        ctx.fillStyle = `rgba(${fc.r},${fc.g},${fc.b},${tile.owner === 'player' ? 0.06 : 0.04})`;
+        const overlayAlpha = tile.owner === 'player' ? 0.10 : 0.07;
+        ctx.fillStyle = `rgba(${fc.r},${fc.g},${fc.b},${overlayAlpha})`;
         ctx.fillRect(px, py, tw, th);
       }
     }
 
-    // Selected
+    // — Bordure de tile subtile (style Civ6 hexagonal look)
+    if (sc > 0.65) {
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(px + 0.5, py + 0.5, tw - 1, th - 1);
+    }
+
+    // Selected tile
     if (G.selectedTile && G.selectedTile.x === tile.x && G.selectedTile.y === tile.y) {
       ctx.fillStyle = 'rgba(240,192,64,0.10)';
       ctx.fillRect(px, py, tw, th);
@@ -641,7 +701,7 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
   buildVoronoiMap(W, H, sc);
   drawOrganicBorders(ctx, ox, oy, sc * 0.7, TW, TH, W, H);
 
-  // 5. Bâtiments
+  // 5. Bâtiments — plus grands et plus riches
   G.tiles.forEach(tile => {
     if (!tile.special) return;
     const px = tile.x * TW * sc + ox;
@@ -652,21 +712,37 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
     if (!tile.owner && sc < 0.6) return;
 
     const cx2 = px + tw * 0.5;
-    const cy2 = py + th * 0.72;
+    const cy2 = py + th * 0.70;
 
-    ctx.globalAlpha = tile.owner === 'player' ? 1 : tile.owner ? 0.82 : 0.5;
+    // Ombre portée bâtiment
+    if (sc > 0.55) {
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(cx2 + 4 * sc, cy2 + 3 * sc, 12 * sc, 5 * sc, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.globalAlpha = tile.owner === 'player' ? 1 : tile.owner ? 0.88 : 0.55;
     drawBuilding(ctx, tile.special, cx2, cy2, sc);
     ctx.globalAlpha = 1;
 
     if (sc > 0.65) {
       const names = { capital: 'Auvray', village: 'Village', ruin: 'Ruines', monastery: 'Abbaye' };
       const name = names[tile.special] || '';
-      ctx.font = `${Math.max(8, Math.floor(9 * sc))}px 'Cinzel', serif`;
+      const labelY = cy2 + 10 * sc;
+      // Fond du label
+      const lw = ctx.measureText(name).width + 8;
+      ctx.fillStyle = 'rgba(8,4,2,0.65)';
+      ctx.beginPath();
+      ctx.roundRect(cx2 - lw/2, labelY - 1, lw, Math.max(8, 9 * sc) + 2, 2);
+      ctx.fill();
+      ctx.font = `bold ${Math.max(8, Math.floor(9 * sc))}px 'Cinzel', serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillText(name, cx2 + 1, py + th * 0.92 + 1);
-      ctx.fillStyle = tile.owner === 'player' ? 'rgba(240,200,80,0.95)' : 'rgba(210,185,145,0.85)';
-      ctx.fillText(name, cx2, py + th * 0.92);
+      ctx.fillStyle = tile.owner === 'player' ? 'rgba(240,200,80,0.98)' : 'rgba(215,190,155,0.90)';
+      ctx.fillText(name, cx2, labelY);
     }
   });
 
@@ -681,7 +757,7 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
       if (!fogTile || (!fogTile.owner && sc < 0.8)) return;
       const cx2 = x * TW * sc + ox + TW * sc * 0.5;
       const cy2 = y * TH * sc + oy + TH * sc * 0.3;
-      ctx.globalAlpha = owner === 'player' ? 0.95 : 0.75;
+      ctx.globalAlpha = owner === 'player' ? 0.95 : 0.78;
       drawShield(ctx, cx2, cy2, 6 * sc, owner);
       ctx.globalAlpha = 1;
     });
@@ -689,28 +765,31 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
 
   // 7. Labels territoires (en mode zoom, plus petits)
   if (sc > 0.65) {
-    drawRegionLabels(ctx, ox, oy, sc * 0.6, TW, TH, W, H);
+    drawRegionLabels(ctx, ox, oy, sc * 0.62, TW, TH, W, H);
   }
 
-  // 8. Haze atmosphérique
+  // 8. Haze atmosphérique (brume de vallée)
   G.tiles.forEach(tile => {
     if (tile.type === 'plains' || tile.type === 'hills') {
       const elev = getElev(tile.x, tile.y);
-      if (elev < 0.3) {
+      if (elev < 0.28) {
         const px = tile.x * TW * sc + ox;
         const py = tile.y * TH * sc + oy;
         const tw = TW * sc, th = TH * sc;
-        const hazeFactor = (0.3 - elev) * (season === 3 ? 1.4 : 0.7);
-        ctx.fillStyle = `rgba(150,168,185,${hazeFactor * 0.10})`;
+        const hazeCol = season === 3
+          ? [130, 145, 165]
+          : season === 2 ? [165, 148, 112] : [145, 162, 178];
+        const hazeFactor = (0.28 - elev) * (season === 3 ? 1.5 : 0.75);
+        ctx.fillStyle = `rgba(${hazeCol[0]},${hazeCol[1]},${hazeCol[2]},${hazeFactor * 0.11})`;
         ctx.fillRect(px, py, tw, th);
       }
     }
   });
 
-  // 9. Parchment overlay
+  // 9. Parchment overlay (plus léger en mode zoom)
   buildParchmentTexture(W, H);
   if (parchmentCanvas) {
-    ctx.globalAlpha = 0.14;
+    ctx.globalAlpha = 0.09;
     ctx.drawImage(parchmentCanvas, 0, 0);
     ctx.globalAlpha = 1;
   }
@@ -718,7 +797,7 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
   // 10. Vignette
   const vig = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, Math.max(W,H)*0.75);
   vig.addColorStop(0, 'rgba(0,0,0,0)');
-  vig.addColorStop(1, 'rgba(0,0,0,0.68)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.62)');
   ctx.fillStyle = vig;
   ctx.fillRect(0, 0, W, H);
 
@@ -733,13 +812,92 @@ function drawDetailMode(ctx, W, H, ox, oy, sc, season) {
 }
 
 /* ─────────────────────────────────────────────
+   TEXTURE SOL — grain procédural style Civ6
+   Gives each tile a rich ground texture feel
+───────────────────────────────────────────── */
+function drawSoilTexture(ctx, tile, px, py, tw, th, sc, season, elev, nv, nv2) {
+  if (sc < 0.5 || tile.type === 'water') return;
+  ctx.save();
+
+  // Plaines / collines : herbes et sol
+  if (tile.type === 'plains' || tile.type === 'hills') {
+    const grassAlpha = season === 3 ? 0.08 : 0.15;
+    const grassCol = season === 3 ? 'rgba(130,130,100,' : 'rgba(62,118,32,';
+    ctx.strokeStyle = grassCol + grassAlpha + ')';
+    ctx.lineWidth = 0.6 * sc;
+    for (let gi = 0; gi < 14; gi++) {
+      const gx = px + hash(tile.x * 7 + gi, tile.y * 11) * tw;
+      const gy = py + hash(tile.x * 11 + gi, tile.y * 7 + gi) * th;
+      const gh = (2 + hash(gi, tile.x + tile.y) * 4) * sc;
+      const lean = (hash(gi * 3, tile.x * tile.y) - 0.5) * sc;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy);
+      ctx.quadraticCurveTo(gx + lean, gy - gh * 0.6, gx + lean * 1.5, gy - gh);
+      ctx.stroke();
+    }
+    // Petites pierres/taches sol
+    ctx.fillStyle = 'rgba(100,90,70,0.08)';
+    for (let ri = 0; ri < 5; ri++) {
+      const rx = px + hash(tile.x * 31 + ri, tile.y * 41) * tw;
+      const ry = py + hash(tile.x * 41 + ri, tile.y * 31 + ri) * th;
+      const rr = (0.8 + hash(ri, tile.x - tile.y) * 1.2) * sc;
+      ctx.beginPath();
+      ctx.arc(rx, ry, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Forêt : sous-bois sombre
+  if (tile.type === 'forest') {
+    ctx.fillStyle = 'rgba(0,30,0,0.18)';
+    ctx.fillRect(px, py + th * 0.5, tw, th * 0.5);
+  }
+
+  // Montagne : roches détaillées
+  if (tile.type === 'mountain' && sc > 0.65) {
+    for (let ri = 0; ri < 8; ri++) {
+      const rx = px + hash(tile.x * 23 + ri, tile.y * 37) * tw;
+      const ry = py + hash(tile.x * 37 + ri, tile.y * 23) * th;
+      const rw = (3 + hash(ri * 2, tile.x * 3) * 5) * sc;
+      const rh = rw * 0.55;
+      ctx.fillStyle = `rgba(80,72,60,${0.12 + hash(ri, tile.x + ri) * 0.10})`;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, rw, rh, hash(ri, tile.y) * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Côte sableuse : grain de sable
+  if (tile.type !== 'water' && tile.type !== 'mountain' && tile.type !== 'forest') {
+    const isCoast = [{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}].some(({dx,dy}) => {
+      const n = G.tiles.find(t => t.x===tile.x+dx && t.y===tile.y+dy);
+      return n && n.type === 'water';
+    });
+    if (isCoast) {
+      // Ripples de sable
+      for (let si = 0; si < 5; si++) {
+        const sx = px + (0.05 + si * 0.19) * tw;
+        ctx.strokeStyle = `rgba(200,175,105,${0.12 + nv * 0.08})`;
+        ctx.lineWidth = 0.7 * sc;
+        ctx.beginPath();
+        ctx.moveTo(sx, py + th * 0.62);
+        ctx.quadraticCurveTo(sx + tw * 0.09, py + th * 0.72, sx + tw * 0.18, py + th * 0.62);
+        ctx.stroke();
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
+/* ─────────────────────────────────────────────
    TEXTURES MICRO-TERRAIN
 ───────────────────────────────────────────── */
 function drawTerrainTexture(ctx, tile, px, py, tw, th, sc, season, elev) {
   ctx.save();
 
   if (tile.type === 'forest' || (tile.type === 'hills' && sc > 0.5)) {
-    // Arbres organiques — v0.16.2
+    // Arbres organiques — v0.16.3
     const treeCount = tile.type === 'forest' ? 6 : 3;
     const treeType = tile.y < 6 ? 'conifer' : 'deciduous';
     for (let ti = 0; ti < treeCount; ti++) {
@@ -778,7 +936,7 @@ function drawTerrainTexture(ctx, tile, px, py, tw, th, sc, season, elev) {
 }
 
 /* ─────────────────────────────────────────────
-   ARBRES ORGANIQUES — v0.16.2
+   ARBRES ORGANIQUES — v0.16.3
    Multi-blobs, ombre portée, reflet lumière
 ───────────────────────────────────────────── */
 function drawTreeOrganic(ctx, tx, ty, sc, type, season, seed2) {
@@ -951,22 +1109,38 @@ function drawMountainSilhouette(ctx, tile, px, py, tw, th, sc, elev, season) {
 }
 
 /* ─────────────────────────────────────────────
-   ONDULATIONS EAU
+   ONDULATIONS EAU — v0.16.3 (plus riches)
 ───────────────────────────────────────────── */
 function drawWaterWaves(ctx, px, py, tw, th, sc, tile) {
-  if (sc < 0.5) return;
-  const t = Date.now() * 0.0003;
-  ctx.strokeStyle = 'rgba(80,160,240,0.18)';
-  ctx.lineWidth = 0.7 * sc;
-  for (let wi = 0; wi < 3; wi++) {
-    const wy = py + th * (0.22 + wi * 0.26);
-    const wOff = (t + tile.x * 0.38 + wi * 0.55) % (tw);
+  if (sc < 0.45) return;
+  const t = Date.now() * 0.00028;
+  // Vagues principales
+  for (let wi = 0; wi < 4; wi++) {
+    const wy = py + th * (0.15 + wi * 0.22);
+    const wOff = (t * (1.0 + wi * 0.18) + tile.x * 0.42 + wi * 0.62) % tw;
+    const alpha = 0.12 + wi * 0.04;
+    ctx.strokeStyle = `rgba(110,190,255,${alpha})`;
+    ctx.lineWidth = (0.6 + wi * 0.15) * sc;
     ctx.beginPath();
     ctx.moveTo(px, wy);
-    for (let wx = 0; wx <= tw; wx += 4 * sc) {
-      ctx.lineTo(px + wx, wy + Math.sin((wx + wOff) * 0.42) * 0.85 * sc);
+    for (let wx = 0; wx <= tw; wx += 3 * sc) {
+      const waveY = wy + Math.sin((wx + wOff * (wi % 2 === 0 ? 1 : -0.7)) * 0.38) * 0.9 * sc;
+      wx === 0 ? ctx.moveTo(px, waveY) : ctx.lineTo(px + wx, waveY);
     }
     ctx.stroke();
+  }
+  // Reflets lumineux ponctuels
+  if (sc > 0.65) {
+    const glintT = Date.now() * 0.0012;
+    for (let gi = 0; gi < 3; gi++) {
+      const gx = px + ((hash(tile.x * 7 + gi, tile.y * 13 + gi) * tw + glintT * 18) % tw);
+      const gy = py + hash(tile.x * 13 + gi, tile.y * 7) * th * 0.8 + th * 0.1;
+      const glintA = Math.abs(Math.sin(glintT * 2 + gi * 2.1)) * 0.22;
+      ctx.fillStyle = `rgba(255,255,255,${glintA})`;
+      ctx.beginPath();
+      ctx.ellipse(gx, gy, 2.2 * sc, 0.9 * sc, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
@@ -1029,72 +1203,134 @@ function drawFields(ctx, px, py, tw, th, sc, season) {
 }
 
 /* ─────────────────────────────────────────────
-   BUILDING FOOTPRINTS
+   BUILDING FOOTPRINTS — v0.16.3 (style Civ6)
 ───────────────────────────────────────────── */
 function drawBuilding(ctx, type, cx, cy, sc) {
-  const s = sc * 0.9;
+  const s = sc * 0.95;
   ctx.save();
   ctx.translate(cx, cy);
 
   if (type === 'capital' || type === 'castle') {
-    ctx.fillStyle = '#2a1e0e';
-    ctx.strokeStyle = '#6a5030';
-    ctx.lineWidth = 0.5 * s;
-    ctx.fillRect(-5 * s, -9 * s, 10 * s, 10 * s);
-    for (let i = -5; i <= 3; i += 2.5) ctx.fillRect(i * s, -12 * s, 2 * s, 3 * s);
-    ctx.fillRect(-8 * s, -7 * s, 5 * s, 8 * s);
-    ctx.fillRect(-8.5 * s, -10 * s, 6 * s, 3 * s);
-    ctx.fillRect(3 * s, -7 * s, 5 * s, 8 * s);
-    ctx.fillRect(2.5 * s, -10 * s, 6 * s, 3 * s);
-    ctx.fillStyle = '#0a0604';
+    // Corps principal du château
+    ctx.fillStyle = '#2e2218';
+    ctx.fillRect(-6 * s, -11 * s, 12 * s, 12 * s);
+    // Créneaux
+    for (let i = -6; i <= 4; i += 2.5) {
+      ctx.fillStyle = '#3a2a18';
+      ctx.fillRect(i * s, -14 * s, 2 * s, 3.5 * s);
+    }
+    // Tours latérales gauche
+    ctx.fillStyle = '#261c10';
+    ctx.fillRect(-10 * s, -9 * s, 6 * s, 10 * s);
+    ctx.fillStyle = '#2e2218';
+    ctx.fillRect(-10.5 * s, -12 * s, 7 * s, 3.5 * s);
+    // Tours latérales droite
+    ctx.fillRect(3.5 * s, -9 * s, 6 * s, 10 * s);
+    ctx.fillStyle = '#2e2218';
+    ctx.fillRect(3 * s, -12 * s, 7 * s, 3.5 * s);
+    // Porte arquée
+    ctx.fillStyle = '#0c0804';
     ctx.beginPath();
-    ctx.arc(0, 0.5 * s, 2.5 * s, Math.PI, 0);
+    ctx.arc(0, 0.5 * s, 3 * s, Math.PI, 0);
     ctx.fill();
-    ctx.fillRect(-2.5 * s, -4.5 * s, 5 * s, 5 * s);
+    ctx.fillRect(-3 * s, -5 * s, 6 * s, 5.5 * s);
+    // Herse
+    ctx.strokeStyle = '#1a1208';
+    ctx.lineWidth = 0.5 * s;
+    for (let i = -2.5; i <= 2.5; i += 1.2) {
+      ctx.beginPath(); ctx.moveTo(i * s, -5 * s); ctx.lineTo(i * s, 0.5 * s); ctx.stroke();
+    }
+    // Drapeau
     ctx.fillStyle = '#c8921e';
-    ctx.fillRect(0, -12 * s, 0.8 * s, -5 * s);
+    ctx.fillRect(0, -15 * s, 0.8 * s, -5 * s);
+    ctx.fillStyle = '#e8a828';
     ctx.beginPath();
-    ctx.moveTo(0.8 * s, -17 * s);
-    ctx.lineTo(0.8 * s, -12 * s);
-    ctx.lineTo(5 * s, -14.5 * s);
+    ctx.moveTo(0.8 * s, -20 * s);
+    ctx.lineTo(0.8 * s, -15 * s);
+    ctx.lineTo(6 * s, -17.5 * s);
     ctx.closePath();
     ctx.fill();
+    // Ombre latérale
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(4 * s, -11 * s, 3 * s, 12 * s);
 
   } else if (type === 'village' || type === 'town') {
-    const count = type === 'town' ? 4 : 2;
+    const count = type === 'town' ? 4 : 3;
     for (let i = 0; i < count; i++) {
-      const ox2 = (i - count / 2 + 0.5) * 7 * s;
-      const oy2 = hash(i * 17, i * 31) * 3 * s - 2 * s;
-      ctx.fillStyle = `rgb(${lerpColor([160,130,95],[140,110,75],hash(i,i*3)).join(',')})`;
-      ctx.fillRect(ox2 - 3 * s, oy2 - 2 * s, 6 * s, 5 * s);
-      ctx.fillStyle = `rgb(${lerpColor([100,50,30],[130,70,40],hash(i*5,i)).join(',')})`;
+      const ox2 = (i - count / 2 + 0.5) * 7.5 * s;
+      const oy2 = hash(i * 17, i * 31) * 2 * s - 1 * s;
+      // Murs
+      const wallH = (5 + hash(i * 3, i * 7) * 3) * s;
+      ctx.fillStyle = `rgb(${lerpColor([168,140,105],[145,118,82],hash(i,i*3)).join(',')})`;
+      ctx.fillRect(ox2 - 3.5 * s, oy2 - wallH, 7 * s, wallH);
+      // Toit
+      ctx.fillStyle = `rgb(${lerpColor([110,58,32],[138,75,42],hash(i*5,i)).join(',')})`;
       ctx.beginPath();
-      ctx.moveTo(ox2 - 4 * s, oy2 - 2 * s);
-      ctx.lineTo(ox2, oy2 - 7 * s);
-      ctx.lineTo(ox2 + 4 * s, oy2 - 2 * s);
+      ctx.moveTo(ox2 - 4.5 * s, oy2 - wallH);
+      ctx.lineTo(ox2, oy2 - wallH - 7 * s);
+      ctx.lineTo(ox2 + 4.5 * s, oy2 - wallH);
       ctx.closePath();
       ctx.fill();
+      // Ombre toit
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath();
+      ctx.moveTo(ox2, oy2 - wallH - 7 * s);
+      ctx.lineTo(ox2 + 4.5 * s, oy2 - wallH);
+      ctx.lineTo(ox2 + 3.5 * s, oy2 - wallH);
+      ctx.closePath();
+      ctx.fill();
+      // Fenêtre
+      ctx.fillStyle = 'rgba(255,220,80,0.55)';
+      ctx.fillRect(ox2 - 1 * s, oy2 - wallH * 0.55, 2 * s, 2.5 * s);
     }
 
   } else if (type === 'monastery') {
-    ctx.fillStyle = '#c8b880';
-    ctx.fillRect(-3 * s, -10 * s, 6 * s, 10 * s);
-    ctx.fillRect(-0.8 * s, -14 * s, 1.6 * s, 5 * s);
-    ctx.fillRect(-3 * s, -12 * s, 6 * s, 1.6 * s);
-    ctx.fillRect(-6 * s, -5 * s, 12 * s, 7 * s);
-    ctx.fillStyle = '#1a1208';
-    ctx.beginPath(); ctx.arc(-1.5 * s, -3 * s, 1.2 * s, Math.PI, 0); ctx.fill();
-    ctx.beginPath(); ctx.arc(1.5 * s, -3 * s, 1.2 * s, Math.PI, 0); ctx.fill();
+    // Nef principale
+    ctx.fillStyle = '#cec090';
+    ctx.fillRect(-4 * s, -12 * s, 8 * s, 13 * s);
+    // Clocher
+    ctx.fillStyle = '#d8ca9c';
+    ctx.fillRect(-1 * s, -18 * s, 2 * s, 7 * s);
+    ctx.fillRect(-4 * s, -14 * s, 8 * s, 2.5 * s);
+    // Croix
+    ctx.fillStyle = '#c8921e';
+    ctx.fillRect(-0.4 * s, -22 * s, 0.8 * s, 6 * s);
+    ctx.fillRect(-2 * s, -20.5 * s, 4 * s, 0.8 * s);
+    // Bas-côté
+    ctx.fillStyle = '#b8b080';
+    ctx.fillRect(-7 * s, -6 * s, 14 * s, 8 * s);
+    // Rosace
+    ctx.strokeStyle = '#e8c840';
+    ctx.lineWidth = 0.6 * s;
+    ctx.beginPath(); ctx.arc(0, -8 * s, 2 * s, 0, Math.PI * 2); ctx.stroke();
+    // Ombre
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(4 * s, -12 * s, 2 * s, 13 * s);
 
   } else if (type === 'ruin') {
-    ctx.fillStyle = '#6a6055';
-    ctx.fillRect(-6 * s, -4 * s, 4 * s, 6 * s);
-    ctx.fillRect(2 * s, -6 * s, 4 * s, 8 * s);
+    // Murs brisés
+    ctx.fillStyle = '#72685a';
+    ctx.fillRect(-7 * s, -5 * s, 5 * s, 7 * s);
+    // Créneau cassé
+    ctx.fillRect(-7 * s, -7 * s, 2 * s, 3 * s);
+    ctx.fillRect(-4 * s, -6 * s, 2 * s, 2 * s);
+    // Tour partiellement debout
+    ctx.fillStyle = '#68605a';
+    ctx.fillRect(2 * s, -9 * s, 5 * s, 11 * s);
+    ctx.fillRect(2 * s, -10 * s, 3 * s, 2 * s);
+    // Débris au sol
+    ctx.fillStyle = '#5a5048';
     ctx.fillRect(-5 * s, -1 * s, 10 * s, 2 * s);
+    ctx.fillRect(-2 * s, 0 * s, 5 * s, 1.5 * s);
+    // Craquelures
     ctx.strokeStyle = '#3a3028';
     ctx.lineWidth = 0.7 * s;
-    ctx.beginPath(); ctx.moveTo(3 * s, -6 * s); ctx.lineTo(4.5 * s, -2 * s); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-5 * s, -4 * s); ctx.lineTo(-3 * s, -1 * s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3 * s, -9 * s); ctx.lineTo(5 * s, -3 * s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-6 * s, -5 * s); ctx.lineTo(-4 * s, -1 * s); ctx.stroke();
+    // Végétation envahissante
+    ctx.fillStyle = 'rgba(38,88,22,0.55)';
+    ctx.beginPath(); ctx.arc(-5 * s, -1 * s, 2.5 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6 * s, 0 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
   }
 
   ctx.restore();
@@ -1411,9 +1647,8 @@ window.drawMap = function drawMap() {
   if (canvas.width !== newW || canvas.height !== newH) {
     canvas.width = newW;
     canvas.height = newH;
-    // Invalider parchment + voronoi si taille change
+    // Invalider parchment seulement (le voronoi est indépendant de la taille du canvas)
     parchmentCanvas = null;
-    voronoiData = null;
   }
 
   const ctx = canvas.getContext('2d');
@@ -1454,4 +1689,4 @@ window.centerMap = function centerMap() {
   G.map.offsetY = cont.clientHeight / 2 - 8 * TH - TH / 2;
 };
 
-console.log('[map.js v0.16.2] Moteur cartographique — frontières organiques, dual-zoom ✓');
+console.log('[map.js v0.16.3] Moteur cartographique — frontières organiques, dual-zoom ✓');
